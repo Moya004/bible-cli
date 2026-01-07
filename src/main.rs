@@ -2,6 +2,30 @@ use simple_regex::RegexBuilder;
 use std::io::{self, Write};
 
 fn get_verses(buffer: &String) -> Vec<String> {
+    let book = RegexBuilder::new()
+        .group(
+            RegexBuilder::new().alternative(
+                RegexBuilder::new().alternative(
+                    RegexBuilder::new()
+                        .word_boundary()
+                        .string("Genesis")
+                        .word_boundary(),
+                    RegexBuilder::new()
+                        .word_boundary()
+                        .string("Exodo")
+                        .word_boundary(),
+                ),
+                RegexBuilder::new()
+                    .word_boundary()
+                    .character_class("Levitico")
+                    .word_boundary(),
+            ),
+        )
+        .to_regex_or_panic();
+
+    for input in buffer.split(";") {
+        println!("{}", book.is_match(input));
+    }
     vec![]
 }
 
