@@ -17,13 +17,14 @@ fn get_verses(buffer: &String) -> Vec<String> {
                 ),
                 RegexBuilder::new()
                     .word_boundary()
-                    .character_class("Levitico")
+                    .string("Levitico")
                     .word_boundary(),
             ),
         )
         .to_regex_or_panic();
 
     for input in buffer.split(";") {
+        println!("{}", input);
         println!("{}", book.is_match(input));
     }
     vec![]
