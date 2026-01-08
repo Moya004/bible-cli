@@ -12,9 +12,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "array-deque"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c9dd5475732b0e301dd7a5cd3317def5bdde5eda6f9f7ecdd8ec674e4a836ec"
+
+[[package]]
 name = "biblia-cli"
 version = "0.1.0"
 dependencies = [
+ "array-deque",
  "simple-regex",
 ]
 
