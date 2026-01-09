@@ -48,7 +48,31 @@ impl Buffer {
         for key in input.keys() {
             write!(output, "").unwrap();
             match key.as_ref().unwrap() {
-                Key::Left => write!(output, "{}", cursor::Left(1)).unwrap(),
+                Key::Char(';') => {
+                    let coords = output.cursor_pos().unwrap();
+                    write!(output, "{:?}", coords).unwrap()
+                }
+                Key::Left => {
+                    let curr_coords = output.cursor_pos().unwrap();
+                    if curr_coords.1 == cursor_y {
+                        if curr_coords.0 > 4 {
+                            write!(output, "{}", cursor::Left(1)).unwrap()
+                        }
+                    } else {
+                        if curr_coords.1 > cursor_y {
+                            if curr_coords.0 > 1 {
+                                write!(output, "{}", cursor::Left(1)).unwrap()
+                            } else {
+                                write!(
+                                    output,
+                                    "{}",
+                                    cursor::Goto(terminal_size().unwrap().0, curr_coords.1 - 1)
+                                )
+                                .unwrap();
+                            }
+                        }
+                    }
+                }
                 Key::Right => write!(output, "{}", cursor::Right(1)).unwrap(),
                 Key::Up => write!(output, "YOU PRESSED 'UP'").unwrap(),
                 Key::Down => write!(output, "YOU PRESSD DOWN").unwrap(),
