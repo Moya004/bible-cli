@@ -1,8 +1,13 @@
 use array_deque::StackArrayDeque as SDeque;
-use simple_regex::RegexBuilder;
-use std::io::{self, Write};
+use std::fmt::Write as WriteFmt;
+use std::io::{Write, stdin, stdout};
+use std::process::exit;
+use termion::cursor;
+use termion::event::Key;
+use termion::input::TermRead;
+use termion::raw::IntoRawMode;
 
-fn get_verses(buffer: &String) -> Vec<String> {
+fn get_verses(_buffer: &String) -> Vec<String> {
     vec![]
 }
 
@@ -30,13 +35,34 @@ impl Buffer {
     }
 
     fn read_line(&mut self) -> String {
-        print!("📔>");
+        let input_controller = stdin();
+        let mut output_controller = stdout().into_raw_mode().unwrap();
+        match write!(output_controller, "\r\n📔>") {
+            Ok(text) => text,
+            Err(_) => (),
+        }
+        output_controller.flush().expect("Error vaciando el buffer");
 
-        io::stdout().flush().expect("Error vaciando buffer");
-
-        io::stdin()
-            .read_line(&mut self.content)
-            .expect("Error leyendo linea");
+        for key in input_controller.keys() {
+            write!(output_controller, "").unwrap();
+            match key.as_ref().unwrap() {
+                Key::Left => write!(output_controller, "{}", cursor::Left(1)).unwrap(),
+                Key::Right => write!(output_controller, "{}", cursor::Right(1)).unwrap(),
+                Key::Up => write!(output_controller, "YOU PRESSED 'UP'").unwrap(),
+                Key::Down => write!(output_controller, "YOU PRESSD DOWN").unwrap(),
+                Key::Ctrl('c') => {
+                    output_controller.suspend_raw_mode().unwrap();
+                    exit(0);
+                }
+                Key::Char('\n') => break,
+                Key::Char(c) => {
+                    write!(&mut self.content, "{}", c).unwrap();
+                    print!("{}", c);
+                }
+                _ => continue,
+            }
+            output_controller.flush().unwrap();
+        }
 
         self.save_on_history();
 
@@ -46,7 +72,6 @@ impl Buffer {
         };
 
         self.content.clear();
-
         input_to_return
     }
 }
