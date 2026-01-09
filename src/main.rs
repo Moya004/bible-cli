@@ -55,6 +55,7 @@ impl Buffer {
                         write!(output, "{}", cursor::Left(1)).unwrap();
                         write!(output, " ").unwrap();
                         write!(output, "{}", cursor::Left(1)).unwrap();
+                        self.content.pop();
                     }
                 }
                 Key::Ctrl('c') => {
