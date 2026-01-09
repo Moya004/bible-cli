@@ -1,11 +1,12 @@
 use array_deque::StackArrayDeque as SDeque;
-use std::fmt::Write as WriteFmt;
+use std::fmt::{Write as WriteFmt, write};
 use std::io::{Write, stdin, stdout};
 use std::process::exit;
 use termion::cursor::{self, DetectCursorPos};
 use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
+use termion::terminal_size;
 
 fn get_verses(_buffer: &String) -> Vec<String> {
     vec![]
@@ -43,6 +44,7 @@ impl Buffer {
         }
         output.flush().expect("Error vaciando el buffer");
 
+        let (_, cursor_y) = output.cursor_pos().unwrap();
         for key in input.keys() {
             write!(output, "").unwrap();
             match key.as_ref().unwrap() {
@@ -50,6 +52,14 @@ impl Buffer {
                 Key::Right => write!(output, "{}", cursor::Right(1)).unwrap(),
                 Key::Up => write!(output, "YOU PRESSED 'UP'").unwrap(),
                 Key::Down => write!(output, "YOU PRESSD DOWN").unwrap(),
+                Key::End => {
+                    let dimensions: (u16, u16) = terminal_size().unwrap();
+                    let (dx, dy) = (
+                        ((self.content.len() + 4) % (dimensions.0 as usize)) as u16,
+                        ((self.content.len() + 4) / (dimensions.0 as usize)) as u16,
+                    );
+                    write!(output, "{}", cursor::Goto(dx, cursor_y + dy)).unwrap();
+                }
                 Key::Backspace => {
                     if output.cursor_pos().unwrap().0 > 4 {
                         write!(output, "{}", cursor::Left(1)).unwrap();
