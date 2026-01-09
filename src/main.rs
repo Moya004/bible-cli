@@ -2,7 +2,7 @@ use array_deque::StackArrayDeque as SDeque;
 use std::fmt::Write as WriteFmt;
 use std::io::{Write, stdin, stdout};
 use std::process::exit;
-use termion::cursor;
+use termion::cursor::{self, DetectCursorPos};
 use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
@@ -35,33 +35,40 @@ impl Buffer {
     }
 
     fn read_line(&mut self) -> String {
-        let input_controller = stdin();
-        let mut output_controller = stdout().into_raw_mode().unwrap();
-        match write!(output_controller, "\r\n📔>") {
+        let input = stdin();
+        let mut output = stdout().into_raw_mode().unwrap();
+        match write!(output, "\r\n📔>") {
             Ok(text) => text,
             Err(_) => (),
         }
-        output_controller.flush().expect("Error vaciando el buffer");
+        output.flush().expect("Error vaciando el buffer");
 
-        for key in input_controller.keys() {
-            write!(output_controller, "").unwrap();
+        for key in input.keys() {
+            write!(output, "").unwrap();
             match key.as_ref().unwrap() {
-                Key::Left => write!(output_controller, "{}", cursor::Left(1)).unwrap(),
-                Key::Right => write!(output_controller, "{}", cursor::Right(1)).unwrap(),
-                Key::Up => write!(output_controller, "YOU PRESSED 'UP'").unwrap(),
-                Key::Down => write!(output_controller, "YOU PRESSD DOWN").unwrap(),
+                Key::Left => write!(output, "{}", cursor::Left(1)).unwrap(),
+                Key::Right => write!(output, "{}", cursor::Right(1)).unwrap(),
+                Key::Up => write!(output, "YOU PRESSED 'UP'").unwrap(),
+                Key::Down => write!(output, "YOU PRESSD DOWN").unwrap(),
+                Key::Backspace => {
+                    if output.cursor_pos().unwrap().0 > 4 {
+                        write!(output, "{}", cursor::Left(1)).unwrap();
+                        write!(output, " ").unwrap();
+                        write!(output, "{}", cursor::Left(1)).unwrap();
+                    }
+                }
                 Key::Ctrl('c') => {
-                    output_controller.suspend_raw_mode().unwrap();
+                    output.suspend_raw_mode().unwrap();
                     exit(0);
                 }
                 Key::Char('\n') => break,
                 Key::Char(c) => {
                     write!(&mut self.content, "{}", c).unwrap();
-                    print!("{}", c);
+                    write!(output, "{}", c).unwrap();
                 }
                 _ => continue,
             }
-            output_controller.flush().unwrap();
+            output.flush().unwrap();
         }
 
         self.save_on_history();
