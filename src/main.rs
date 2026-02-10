@@ -35,6 +35,19 @@ impl Buffer {
         }
     }
 
+    fn load_prev_entry(&mut self) {
+        if self.history_pointer > 0 {
+            self.history_pointer -= 1;
+            self.content = self.history[self.history_pointer].clone();
+        }
+    }
+
+    fn load_next_entry(&mut self) {
+        if self.history_pointer < self.history.len() - 1 {
+            self.history_pointer += 1;
+            self.content = self.history[self.history_pointer].clone();
+        }
+    }
     fn read_line(&mut self) -> String {
         let input = stdin();
         print!("\x1B[2J\x1B[1;1H");
@@ -47,7 +60,6 @@ impl Buffer {
 
         let (_, cursor_y) = output.cursor_pos().unwrap();
         for key in input.keys() {
-            write!(output, "").unwrap();
             match key.as_ref().unwrap() {
                 Key::Char(';') => {
                     let coords = output.cursor_pos().unwrap();
@@ -91,8 +103,14 @@ impl Buffer {
                         }
                     }
                 }
-                Key::Up => write!(output, "YOU PRESSED 'UP'").unwrap(),
-                Key::Down => write!(output, "YOU PRESSD DOWN").unwrap(),
+                Key::Up => {
+                    self.load_prev_entry();
+                    write!(output, "{}📔>{}", cursor::Goto(1, 1), self.content).unwrap();
+                }
+                Key::Down => {
+                    self.load_next_entry();
+                    write!(output, "{}📔>{}", cursor::Goto(1, 1), self.content).unwrap();
+                }
                 Key::End => {
                     let dimensions: (u16, u16) = terminal_size().unwrap();
                     let (dx, dy) = (
