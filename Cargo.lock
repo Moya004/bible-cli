@@ -12,17 +12,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "array-deque"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c9dd5475732b0e301dd7a5cd3317def5bdde5eda6f9f7ecdd8ec674e4a836ec"
+
+[[package]]
 name = "biblia-cli"
 version = "0.1.0"
 dependencies = [
+ "array-deque",
  "simple-regex",
+ "termion",
 ]
+
+[[package]]
+name = "libc"
+version = "0.2.180"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bcc35a38544a891a5f7c865aca548a982ccb3b8650a5b06d0fd33a10283c56fc"
 
 [[package]]
 name = "memchr"
 version = "2.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f52b00d39961fc5b2736ea853c9cc86238e165017a493d1d5c8eac6bdc4cc273"
+
+[[package]]
+name = "numtoa"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6aa2c4e539b869820a2b82e1aef6ff40aa85e65decdd5185e83fb4b1249cd00f"
 
 [[package]]
 name = "regex"
@@ -60,4 +80,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "98e38267c2a6c44df325f305431e5d86c39a7779b197b8bb08cdc2ec8139de1b"
 dependencies = [
  "regex",
+]
+
+[[package]]
+name = "termion"
+version = "4.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f44138a9ae08f0f502f24104d82517ef4da7330c35acd638f1f29d3cd5475ecb"
+dependencies = [
+ "libc",
+ "numtoa",
 ]
