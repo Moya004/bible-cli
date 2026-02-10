@@ -61,10 +61,6 @@ impl Buffer {
         let (_, cursor_y) = output.cursor_pos().unwrap();
         for key in input.keys() {
             match key.as_ref().unwrap() {
-                Key::Char(';') => {
-                    let coords = output.cursor_pos().unwrap();
-                    write!(output, "{:?}", coords).unwrap()
-                }
                 Key::Left => {
                     let curr_coords = output.cursor_pos().unwrap();
                     if curr_coords.1 == cursor_y {
