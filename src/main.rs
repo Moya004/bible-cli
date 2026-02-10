@@ -1,4 +1,5 @@
 use array_deque::StackArrayDeque as SDeque;
+use simple_regex::RegexBuilder;
 use std::fmt::Write as WriteFmt;
 use std::io::{Write, stdin, stdout};
 use std::process::exit;
