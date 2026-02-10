@@ -1,12 +1,12 @@
 use array_deque::StackArrayDeque as SDeque;
-use std::fmt::{Write as WriteFmt, write};
+use std::fmt::Write as WriteFmt;
 use std::io::{Write, stdin, stdout};
 use std::process::exit;
 use termion::cursor::{self, DetectCursorPos};
 use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
-use termion::terminal_size;
+use termion::{clear, terminal_size};
 
 fn get_verses(_buffer: &String) -> Vec<String> {
     vec![]
@@ -37,12 +37,13 @@ impl Buffer {
 
     fn read_line(&mut self) -> String {
         let input = stdin();
+        print!("\x1B[2J\x1B[1;1H");
         let mut output = stdout().into_raw_mode().unwrap();
-        match write!(output, "\r\n📔>") {
+        output.flush().expect("Error vaciando el buffer");
+        match write!(output, "📔>") {
             Ok(text) => text,
             Err(_) => (),
         }
-        output.flush().expect("Error vaciando el buffer");
 
         let (_, cursor_y) = output.cursor_pos().unwrap();
         for key in input.keys() {
@@ -73,14 +74,30 @@ impl Buffer {
                         }
                     }
                 }
-                Key::Right => write!(output, "{}", cursor::Right(1)).unwrap(),
+                Key::Right => {
+                    let curr_coords = output.cursor_pos().unwrap();
+                    let dimensions = terminal_size().unwrap();
+                    let (dx, dy) = (
+                        ((self.content.chars().count() + 4) % (dimensions.0 as usize)) as u16,
+                        ((self.content.chars().count() + 4) / (dimensions.0 as usize)) as u16,
+                    );
+                    if curr_coords.0 < dx {
+                        write!(output, "{}", cursor::Right(1)).unwrap();
+                    } else if curr_coords.1 <= dy {
+                        if curr_coords.0 == dimensions.0 {
+                            write!(output, "{}", cursor::Goto(1, curr_coords.1 + 1)).unwrap();
+                        } else {
+                            write!(output, "{}", cursor::Right(1)).unwrap();
+                        }
+                    }
+                }
                 Key::Up => write!(output, "YOU PRESSED 'UP'").unwrap(),
                 Key::Down => write!(output, "YOU PRESSD DOWN").unwrap(),
                 Key::End => {
                     let dimensions: (u16, u16) = terminal_size().unwrap();
                     let (dx, dy) = (
-                        ((self.content.len() + 4) % (dimensions.0 as usize)) as u16,
-                        ((self.content.len() + 4) / (dimensions.0 as usize)) as u16,
+                        ((self.content.chars().count() + 4) % (dimensions.0 as usize)) as u16,
+                        ((self.content.chars().count() + 4) / (dimensions.0 as usize)) as u16,
                     );
                     write!(output, "{}", cursor::Goto(dx, cursor_y + dy)).unwrap();
                 }
@@ -94,6 +111,7 @@ impl Buffer {
                 }
                 Key::Ctrl('c') => {
                     output.suspend_raw_mode().unwrap();
+                    write!(output, "{}{}", clear::All, cursor::Goto(1, 1)).unwrap();
                     exit(0);
                 }
                 Key::Char('\n') => break,
@@ -106,6 +124,8 @@ impl Buffer {
             output.flush().unwrap();
         }
 
+        write!(output, "{}{}", clear::All, cursor::Goto(1, 1)).unwrap();
+        output.flush().unwrap();
         self.save_on_history();
 
         let input_to_return: String = match self.content.trim().parse() {
