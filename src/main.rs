@@ -69,10 +69,12 @@ fn main() {
                 }
                 Key::Up => {
                     buffer.load_prev_entry(&mut content);
+                    write!(output, "{}", clear::All).unwrap();
                     write!(output, "{}📔>{}", cursor::Goto(1, 1), content).unwrap();
                 }
                 Key::Down => {
                     buffer.load_next_entry(&mut content);
+                    write!(output, "{}", clear::All).unwrap();
                     write!(output, "{}📔>{}", cursor::Goto(1, 1), content).unwrap();
                 }
                 Key::End => {
