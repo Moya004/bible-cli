@@ -11,5 +11,9 @@ fn project_root() -> PathBuf {
 pub fn load_bible_structure() -> Result<()> {
     let conn = Connection::open(project_root().join("./database.sqlite3"))?;
 
-    conn.execute_batch(TABLES_SCHEMA)
+    match conn.execute("SELECT DISTINCT b.book FROM bible b;", []) {
+        Ok(_) => Ok(()),
+
+        Err(_) => conn.execute_batch(TABLES_SCHEMA),
+    }
 }
