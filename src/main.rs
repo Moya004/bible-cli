@@ -1,5 +1,7 @@
+mod db;
 mod logic;
 
+use db::seeder::load_bible_structure;
 use logic::{buffer::Buffer, parser::get_verses};
 use std::fmt::Write as WriteFmt;
 use std::io::{Write, stdin, stdout};
@@ -15,6 +17,7 @@ use termion::{clear, terminal_size};
 
 fn main() {
     let mut buffer = Buffer::new();
+    let _ = load_bible_structure();
     loop {
         let input = stdin();
         let mut content = String::new();
