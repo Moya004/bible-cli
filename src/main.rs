@@ -22,8 +22,10 @@ use crate::db::seeder::load_traduction;
 fn main() {
     let mut buffer = Buffer::new();
     let _ = load_bible_structure();
-    let _ =
-        load_traduction(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("traducciones/RVR1960.csv"));
+    let _ = load_traduction(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("./traducciones/RVR1960-Reina_Valera_1960.csv"),
+    );
     thread::sleep(Duration::from_secs(10));
     loop {
         let input = stdin();
