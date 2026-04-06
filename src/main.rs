@@ -1,3 +1,4 @@
+mod constants;
 mod db;
 mod logic;
 
@@ -5,6 +6,7 @@ use db::seeder::load_bible_structure;
 use logic::{buffer::Buffer, parser::get_verses};
 use std::fmt::Write as WriteFmt;
 use std::io::{Write, stdin, stdout};
+use std::path::PathBuf;
 use std::process::exit;
 use std::thread;
 use std::time::Duration;
@@ -15,9 +17,14 @@ use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 use termion::{clear, terminal_size};
 
+use crate::db::seeder::load_traduction;
+
 fn main() {
     let mut buffer = Buffer::new();
     let _ = load_bible_structure();
+    let _ =
+        load_traduction(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("traducciones/RVR1960.csv"));
+    thread::sleep(Duration::from_secs(10));
     loop {
         let input = stdin();
         let mut content = String::new();

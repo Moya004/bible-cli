@@ -1,3 +1,6 @@
+use regex::Regex;
+use std::sync::OnceLock;
+
 pub static BOOKS: &[(&str, &str)] = &[
     // Pentateuco
     ("Génesis", r"(?i)\b(Genesis|Gen|Gn)\b"),
@@ -80,3 +83,15 @@ pub static BOOKS: &[(&str, &str)] = &[
     ("Judas", r"(?i)\b(Judas|Jud|Jd)\b"),
     ("Apocalipsis", r"(?i)\b(Apocalipsis|Apoc|Ap|Rev)\b"),
 ];
+
+static COMPILED_BOOKS_RE: OnceLock<Vec<(&'static str, Regex)>> = OnceLock::new();
+
+/** Return a Vec of the compiled regular expresions of the BOOKS constant*/
+pub fn compiled_books() -> &'static Vec<(&'static str, Regex)> {
+    COMPILED_BOOKS_RE.get_or_init(|| {
+        BOOKS
+            .iter()
+            .map(|(name, pattern)| (*name, Regex::new(pattern).unwrap()))
+            .collect()
+    })
+}
