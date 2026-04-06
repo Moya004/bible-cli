@@ -29,7 +29,7 @@ impl Buffer {
     }
 
     pub fn load_next_entry(&mut self, content: &mut String) {
-        if self.history_pointer < self.history.len() - 1 {
+        if self.history.len() > 0 && self.history_pointer < self.history.len() - 1 {
             self.history_pointer += 1;
             *content = self.history[self.history_pointer].clone();
         }
