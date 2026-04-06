@@ -68,7 +68,7 @@ pub fn load_traduction<P: AsRef<Path>>(path: P) -> Result<(), Error> {
 
     let translation_id_iter = statement.query_map([traduccion_code], |row| row.get::<_, u16>(0))?;
 
-    let mut translation_id: u16;
+    let mut translation_id: u16 = 0;
     for i in translation_id_iter {
         translation_id = i.unwrap();
     }
@@ -89,7 +89,7 @@ pub fn load_traduction<P: AsRef<Path>>(path: P) -> Result<(), Error> {
         if let Some((cannonical_name, _)) = matched_book {
             println!("{} {}:{} -> {}", cannonical_name, chapter, verse, text);
 
-            match conn.execute("INSERT INTO TEXTO_VERSO(libro, capitulo, verso, translation_id, texto) VALUES(?1, ?2, ?3, ?4, ?5);", [book, chapter, verse, stringify!(translation_id), text]) {
+            match conn.execute("INSERT INTO TEXTO_VERSO(libro, capitulo, verso, translation_id, texto) VALUES(?1, ?2, ?3, ?4, ?5);", [book, chapter, verse, &translation_id.to_string(), text]) {
             Ok(_) => {
                 println!("{} {}:{} -> insertado con exito ", cannonical_name, chapter, verse)
             },
