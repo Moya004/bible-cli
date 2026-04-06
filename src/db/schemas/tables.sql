@@ -1,18 +1,18 @@
-CREATE TABLE biblia (
-    book      TEXT      NOT NULL,
-    chapter   INTEGER   NOT NULL,
-    verse     INTEGER   NOT NULL,
-    PRIMARY KEY(book, chapter, verse)
+CREATE TABLE BIBLIA (
+    libro      TEXT      NOT NULL,
+    capitulo   INTEGER   NOT NULL,
+    verso  INTEGER   NOT NULL,
+    PRIMARY KEY(libro, capitulo, verso)
 );
 
 
-CREATE TABLE TRADUCTIONS(
+CREATE TABLE TRADUCCIONES(
     id      INTEGER PRIMARY KEY AUTOINCREMENT,
-    code    TEXT UNIQUE NOT NULL,
+    codigo    TEXT UNIQUE NOT NULL,
     nombre  TEXT NOT NULL
 );
 
-CREATE TABLE VERSE_TEXTS(
+CREATE TABLE TEXTO_VERSO(
   libro          TEXT NOT NULL,
   capitulo       INTEGER NOT NULL,
   verso          INTEGER NOT NULL,
@@ -20,12 +20,12 @@ CREATE TABLE VERSE_TEXTS(
   texto          TEXT NOT NULL,
   PRIMARY KEY (libro, capitulo, verso, translation_id),
   FOREIGN KEY (libro, capitulo, verso)
-    REFERENCES bible(libro, capitulo, verso),
+    REFERENCES bibla(libro, capitulo, verso),
   FOREIGN KEY (translation_id)
-    REFERENCES translations(id)
+    REFERENCES traductions(id)
 );
 
-INSERT INTO biblia (book, chapter, verse) VALUES
+INSERT INTO biblia (libro, capitulo, verso) VALUES
 ('Génesis',1,1),
 ('Génesis',1,2),
 ('Génesis',1,3),
@@ -31126,3 +31126,6 @@ INSERT INTO biblia (book, chapter, verse) VALUES
 ('Apocalipsis',22,19),
 ('Apocalipsis',22,20),
 ('Apocalipsis',22,21);
+
+
+--nuevo comentario
