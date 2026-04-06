@@ -1,2 +1,5 @@
 /target
 /traducciones
+
+*.sqlite
+*.sqlite3
