@@ -26,7 +26,9 @@ fn main() {
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("./traducciones/RVR1960-Reina_Valera_1960.csv"),
     );
-    thread::sleep(Duration::from_secs(10));
+    let _ = load_traduction(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("./traducciones/DHH-Dios_Habla_Hoy.csv"),
+    );
     loop {
         let input = stdin();
         let mut content = String::new();
