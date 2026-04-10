@@ -127,7 +127,12 @@ fn main() {
 
         let input_to_process = buffer.read_line(content);
 
-        println!("{:?}", get_verses(&input_to_process));
+        let processed_input: Vec<&str> = get_verses(&input_to_process)
+            .iter()
+            .map(|book| book.as_string())
+            .collect();
+
+        println!("{:?}", processed_input);
 
         thread::sleep(Duration::from_secs(5));
     }
