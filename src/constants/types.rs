@@ -1,10 +1,18 @@
+use std::ops::RangeInclusive;
+
 use crate::constants::cons::{BOOKS, compiled_books};
+
+#[derive(Debug)]
+pub enum IndexVariation {
+    Single(u8),
+    List(RangeInclusive<u8>),
+}
 
 #[derive(Debug)]
 pub struct Cite {
     book: Book,
-    chapter: u16,
-    verse: u16,
+    chapter: IndexVariation,
+    verse: IndexVariation,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
