@@ -1,18 +1,35 @@
-use crate::constants::types::{Book, IndexVariation};
+use crate::constants::types::{Book, Cite, IndexVariation};
 use regex::Regex;
 
-pub fn get_verses(buffer: &String) -> Vec<Book> {
-    let mut matches: Vec<Book> = Vec::new();
-    for input in buffer.split(";") {
-        let parsed = Book::from_string(input);
-        if let Some(matched_book) = parsed {
-            matches.push(matched_book);
-        }
-    }
-    return matches;
+pub struct ChaptersAndVerses {
+    chapters: Vec<IndexVariation>,
+    verses: Vec<IndexVariation>,
 }
 
-pub fn get_chapter_and_verse(input: &str) -> Option<(Vec<u16>, Vec<u16>)> {
+pub fn get_cites(buffer: &String) -> Option<Vec<Cite>> {
+    let mut matches: Vec<Cite> = Vec::new();
+    for input in buffer.split(";") {
+        let book_to_parse = Book::from_string(input.split(" ").collect::<Vec<&str>>()[0]);
+        let body_to_pars = input.split(" ").collect::<Vec<&str>>()[1..].join("");
+
+        if let Some(matched_book) = book_to_parse {
+            let indices = get_chapter_and_verse(&body_to_pars);
+
+            if indices.chapters.len() > 0 && indices.verses.len() > 0 {
+                if let Some(cite) = build_cites(matched_book, indices) {
+                    matches.push(cite);
+                }
+            }
+        }
+    }
+    None
+}
+
+pub fn build_cites(book: Book, indices: ChaptersAndVerses) -> Option<Cite> {
+    None
+}
+
+pub fn get_chapter_and_verse(input: &str) -> ChaptersAndVerses {
     let single = r"\d+";
     let list = format!(r"{single}-{single}");
     let atom = format!(r"(?:{single}|{list})");
@@ -23,20 +40,23 @@ pub fn get_chapter_and_verse(input: &str) -> Option<(Vec<u16>, Vec<u16>)> {
     let reColl = Regex::new(&collection).unwrap();
     let reCom = Regex::new(&complete).unwrap();
 
+    let mut to_return: ChaptersAndVerses = ChaptersAndVerses {
+        chapters: Vec::new(),
+        verses: Vec::new(),
+    };
+
     if reColl.is_match(input) {
         for complete_item in input.split(".") {
             if reCom.is_match(complete_item) {
                 let to_search: Vec<&str> = complete_item.split(":").collect();
-                println!(
-                    "{:?}:{:?}",
-                    get_index_variations(to_search[0]),
-                    get_index_variations(to_search[1])
-                );
+
+                to_return.chapters = get_index_variations(to_search[0]);
+                to_return.verses = get_index_variations(to_search[1]);
             }
         }
     }
 
-    None
+    to_return
 }
 
 fn get_index_variations(input: &str) -> Vec<IndexVariation> {
