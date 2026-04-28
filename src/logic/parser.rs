@@ -7,7 +7,7 @@ pub struct ChaptersAndVerses {
     verses: Vec<Vec<IndexVariation>>,
 }
 
-pub fn get_cites(buffer: &String) -> Option<Vec<Cite>> {
+pub fn get_cites(buffer: &String) -> Vec<Cite> {
     let mut matches: Vec<Cite> = Vec::new();
     for input in buffer.split(";") {
         let book_to_parse = Book::from_string(input.split(" ").collect::<Vec<&str>>()[0]);
@@ -17,17 +17,28 @@ pub fn get_cites(buffer: &String) -> Option<Vec<Cite>> {
             let indices = get_chapter_and_verse(&body_to_pars);
 
             if indices.chapters.len() > 0 && indices.verses.len() > 0 {
-                if let Some(cite) = build_cites(matched_book, indices) {
-                    matches.push(cite);
-                }
+                let mut cites = build_cites(matched_book, indices);
+                matches.append(&mut cites);
             }
         }
     }
-    None
+    matches
 }
 
-pub fn build_cites(book: Book, indices: ChaptersAndVerses) -> Option<Cite> {
-    None
+pub fn build_cites(book: Book, indices: ChaptersAndVerses) -> Vec<Cite> {
+    let mut to_return: Vec<Cite> = Vec::new();
+    for (chapters_group, verses_group) in indices.chapters.iter().zip(indices.verses.iter()) {
+        for chapters in chapters_group {
+            for verses in verses_group {
+                to_return.push(Cite {
+                    book: book,
+                    chapter: chapters.clone(),
+                    verse: verses.clone(),
+                })
+            }
+        }
+    }
+    to_return
 }
 
 pub fn get_chapter_and_verse(input: &str) -> ChaptersAndVerses {
