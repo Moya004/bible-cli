@@ -3,7 +3,7 @@ mod db;
 mod logic;
 
 use db::seeder::load_bible_structure;
-use logic::{buffer::Buffer, parser::get_verses};
+use logic::{buffer::Buffer, parser::get_cites};
 use std::fmt::Write as WriteFmt;
 use std::io::{Write, stdin, stdout};
 use std::path::PathBuf;
@@ -18,6 +18,7 @@ use termion::raw::IntoRawMode;
 use termion::{clear, terminal_size};
 
 use crate::db::seeder::load_traduction;
+use crate::logic::parser::get_chapter_and_verse;
 
 fn main() {
     let mut buffer = Buffer::new();
@@ -127,13 +128,21 @@ fn main() {
 
         let input_to_process = buffer.read_line(content);
 
-        let processed_input: Vec<&str> = get_verses(&input_to_process)
+        // let processed_input: Vec<&str> = get_verses(&input_to_process)
+        //     .iter()
+        //     .map(|book| book.as_string())
+        //     .collect();
+
+        // println!("{:?}", get_chapter_and_verse(&input_to_process));
+
+        let processed_input: Vec<String> = get_cites(&input_to_process)
             .iter()
-            .map(|book| book.as_string())
+            .map(|cite| cite.as_string())
             .collect();
+        for a in processed_input {
+            println!("{}", a);
+        }
 
-        println!("{:?}", processed_input);
-
-        thread::sleep(Duration::from_secs(5));
+        thread::sleep(Duration::from_secs(10));
     }
 }

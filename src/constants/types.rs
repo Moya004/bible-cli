@@ -2,17 +2,37 @@ use std::ops::RangeInclusive;
 
 use crate::constants::cons::{BOOKS, compiled_books};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum IndexVariation {
     Single(u8),
     List(RangeInclusive<u8>),
 }
 
-#[derive(Debug)]
+impl IndexVariation {
+    pub fn as_string(&self) -> String {
+        match self {
+            IndexVariation::List(r) => format!("{}-{}", r.start(), r.end()),
+            IndexVariation::Single(s) => format!("{}", s),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Cite {
-    book: Book,
-    chapter: IndexVariation,
-    verse: IndexVariation,
+    pub book: Book,
+    pub chapter: IndexVariation,
+    pub verse: IndexVariation,
+}
+
+impl Cite {
+    pub fn as_string(&self) -> String {
+        format!(
+            "Libro: {}\r\nCapitulo(s): {}\r\nVersiculo(s): {}\r\n\n",
+            self.book.as_string(),
+            self.chapter.as_string(),
+            self.verse.as_string()
+        )
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
