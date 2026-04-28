@@ -18,7 +18,6 @@ use termion::raw::IntoRawMode;
 use termion::{clear, terminal_size};
 
 use crate::db::seeder::load_traduction;
-use crate::logic::parser::get_chapter_and_verse;
 
 fn main() {
     let mut buffer = Buffer::new();
