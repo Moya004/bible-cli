@@ -1,9 +1,10 @@
 use crate::constants::types::{Book, Cite, IndexVariation};
 use regex::Regex;
 
+#[derive(Debug)]
 pub struct ChaptersAndVerses {
-    chapters: Vec<IndexVariation>,
-    verses: Vec<IndexVariation>,
+    chapters: Vec<Vec<IndexVariation>>,
+    verses: Vec<Vec<IndexVariation>>,
 }
 
 pub fn get_cites(buffer: &String) -> Option<Vec<Cite>> {
@@ -50,8 +51,12 @@ pub fn get_chapter_and_verse(input: &str) -> ChaptersAndVerses {
             if reCom.is_match(complete_item) {
                 let to_search: Vec<&str> = complete_item.split(":").collect();
 
-                to_return.chapters = get_index_variations(to_search[0]);
-                to_return.verses = get_index_variations(to_search[1]);
+                to_return
+                    .chapters
+                    .push(merge_indicies(get_index_variations(to_search[0])));
+                to_return
+                    .verses
+                    .push(merge_indicies(get_index_variations(to_search[1])));
             }
         }
     }
@@ -89,4 +94,48 @@ fn get_index_variations(input: &str) -> Vec<IndexVariation> {
     }
 
     to_return
+}
+
+pub fn merge_indicies(indices: Vec<IndexVariation>) -> Vec<IndexVariation> {
+    // Normalizar todo a (start, end) y ordenar
+    let mut ranges: Vec<(u8, u8)> = indices
+        .iter()
+        .map(|i| match i {
+            IndexVariation::Single(n) => (*n, *n),
+            IndexVariation::List(r) => (*r.start(), *r.end()),
+        })
+        .collect();
+
+    ranges.sort_by_key(|r| (r.0, r.1));
+
+    // Fusionar
+    let mut merged: Vec<(u8, u8)> = Vec::new();
+
+    for (start, end) in ranges {
+        match merged.last_mut() {
+            None => merged.push((start, end)),
+            Some(last) => {
+                if start <= last.1 + 1 {
+                    // Consecutivo, solapado o duplicado → extender si corresponde
+                    if end > last.1 {
+                        last.1 = end;
+                    }
+                } else {
+                    merged.push((start, end));
+                }
+            }
+        }
+    }
+
+    // Convertir de vuelta a IndexVariation
+    merged
+        .into_iter()
+        .map(|(start, end)| {
+            if start == end {
+                IndexVariation::Single(start)
+            } else {
+                IndexVariation::List(start..=end)
+            }
+        })
+        .collect()
 }
