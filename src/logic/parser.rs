@@ -1,4 +1,7 @@
-use crate::constants::types::{Book, IndexVariation, Query};
+use crate::constants::{
+    cons::{collection_regex, list_regex, single_regex, translation_flag_regex},
+    types::{Book, IndexVariation, Query},
+};
 use regex::Regex;
 
 #[derive(Debug)]
@@ -7,22 +10,22 @@ pub struct ChaptersAndVerses {
     verses: Vec<Vec<IndexVariation>>,
 }
 
-pub fn get_cites(buffer: &String) -> Vec<Query> {
+pub fn get_queries(buffer: &String) -> Vec<Query> {
     let mut matches: Vec<Query> = Vec::new();
     for input in buffer.split(";") {
-        let splited_input: Vec<&str> = input.split(" ").collect();
-        let book_to_parse = Book::from_string(splited_input[0]);
-        let body_to_parse = splited_input[1..splited_input.len() - 1].join("");
-        let translation_to_parse = splited_input[splited_input.len() - 1];
+        if let Some(matched_book) = Book::from_string(input)
+            && let Some(body_to_parse) = collection_regex().find(input)
+        {
+            let indices = get_chapter_and_verse(&input[body_to_parse.range()]);
 
-        if let Some(matched_book) = book_to_parse {
-            let indices = get_chapter_and_verse(&body_to_parse);
-            let translation = get_translation(translation_to_parse);
+            let translation = match translation_flag_regex().find(input) {
+                Some(flag) => get_translation(&input[flag.range()]),
+                None => String::from("RVR1060"),
+            };
 
-            if indices.chapters.len() > 0 && indices.verses.len() > 0 {
-                let mut cites = build_cites(matched_book, indices, translation);
-                matches.append(&mut cites);
-            }
+            let mut queries = build_cites(matched_book, indices, translation);
+
+            matches.append(&mut queries);
         }
     }
     matches
@@ -50,65 +53,48 @@ pub fn get_translation(input: &str) -> String {
 }
 
 pub fn get_chapter_and_verse(input: &str) -> ChaptersAndVerses {
-    let single = r"\d+";
-    let list = format!(r"{single}-{single}");
-    let atom = format!(r"(?:{single}|{list})");
-    let group = format!(r"{atom}(?:,{atom})*");
-    let complete = format!(r"(?:{group}:{group})");
-    let collection = format!(r"{complete}(?:\.{complete})*");
-
-    let re_coll = Regex::new(&collection).unwrap();
-    let re_com = Regex::new(&complete).unwrap();
-
     let mut to_return: ChaptersAndVerses = ChaptersAndVerses {
         chapters: Vec::new(),
         verses: Vec::new(),
     };
 
-    if re_coll.is_match(input) {
-        for complete_item in input.split(".") {
-            if re_com.is_match(complete_item) {
-                let to_search: Vec<&str> = complete_item.split(":").collect();
+    for complete_item in input.split(".") {
+        let to_search: Vec<&str> = complete_item.split(":").collect();
 
-                to_return
-                    .chapters
-                    .push(merge_indicies(get_index_variations(to_search[0])));
-                to_return
-                    .verses
-                    .push(merge_indicies(get_index_variations(to_search[1])));
-            }
-        }
+        to_return
+            .chapters
+            .push(merge_indicies(get_index_variations(to_search[0])));
+        to_return
+            .verses
+            .push(merge_indicies(get_index_variations(to_search[1])));
     }
 
     to_return
 }
 
 fn get_index_variations(input: &str) -> Vec<IndexVariation> {
-    let single = r"\d+";
-    let list = format!(r"{single}-{single}");
-    let atom = format!(r"(?:{single}|{list})");
-    let group = format!(r"{atom}(?:,{atom})*");
-
-    let re_group = Regex::new(&group).unwrap();
-    let re_list = Regex::new(&list).unwrap();
-    let re_single = Regex::new(&single).unwrap();
-
     let mut to_return: Vec<IndexVariation> = Vec::new();
 
-    if re_group.is_match(input) {
-        for group in input.split(",") {
-            if re_list.is_match(group) {
-                let low_high: Vec<u8> = group
-                    .split("-")
-                    .into_iter()
-                    .map(|num| num.parse::<u8>().expect("No valid u8 number"))
-                    .collect();
-                to_return.push(IndexVariation::List(low_high[0]..=low_high[1]));
-            } else if re_single.is_match(group) {
-                to_return.push(IndexVariation::Single(
-                    group.parse::<u8>().expect("No valid u8 number"),
-                ));
-            }
+    for group in input.split(",") {
+        if list_regex().is_match(group) {
+            let low_high: Vec<u8> = group
+                .split("-")
+                .into_iter()
+                .map(|num| {
+                    let final_num = num.trim();
+                    final_num
+                        .parse::<u8>()
+                        .expect(&format!("No valid u8 number: {final_num}"))
+                })
+                .collect();
+            to_return.push(IndexVariation::List(low_high[0]..=low_high[1]));
+        } else if single_regex().is_match(group) {
+            let final_num = group.trim();
+            to_return.push(IndexVariation::Single(
+                final_num
+                    .parse::<u8>()
+                    .expect(&format!("No valid u8 number: {final_num}")),
+            ));
         }
     }
 

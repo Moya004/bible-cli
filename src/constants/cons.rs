@@ -86,6 +86,21 @@ pub static BOOKS: &[(&str, &str)] = &[
 
 static COMPILED_BOOKS_RE: OnceLock<Vec<(&'static str, Regex)>> = OnceLock::new();
 
+static SINGLE: OnceLock<Regex> = OnceLock::new();
+static LIST: OnceLock<Regex> = OnceLock::new();
+static ATOM: OnceLock<Regex> = OnceLock::new();
+static GROUP: OnceLock<Regex> = OnceLock::new();
+static COMPLETE: OnceLock<Regex> = OnceLock::new();
+static COLLECTION: OnceLock<Regex> = OnceLock::new();
+
+static TRANSLATION_FLAG: OnceLock<Regex> = OnceLock::new();
+
+// let list = format!(r"{single}-{single}");
+// let atom = format!(r"(?:{single}|{list})");
+// let group = format!(r"{atom}(?:,{atom})*");
+// let complete = format!(r"(?:{group}:{group})");
+// let collection = format!(r"{complete}(?:\.{complete})*");
+
 /** Return a Vec of the compiled regular expresions of the BOOKS constant*/
 pub fn compiled_books() -> &'static Vec<(&'static str, Regex)> {
     COMPILED_BOOKS_RE.get_or_init(|| {
@@ -94,4 +109,63 @@ pub fn compiled_books() -> &'static Vec<(&'static str, Regex)> {
             .map(|(name, pattern)| (*name, Regex::new(pattern).unwrap()))
             .collect()
     })
+}
+
+pub fn single_regex() -> &'static Regex {
+    SINGLE.get_or_init(|| Regex::new(r"\d+").unwrap())
+}
+
+pub fn list_regex() -> &'static Regex {
+    LIST.get_or_init(|| {
+        Regex::new(&format!(
+            r"\s*{}\s*\-\s*{}\s*",
+            single_regex(),
+            single_regex()
+        ))
+        .unwrap()
+    })
+}
+pub fn atom_regex() -> &'static Regex {
+    ATOM.get_or_init(|| {
+        Regex::new(&format!(
+            r"(?:\s*{}\s*|\s*{}\s*)",
+            list_regex(),
+            single_regex()
+        ))
+        .unwrap()
+    })
+}
+pub fn group_regex() -> &'static Regex {
+    GROUP.get_or_init(|| {
+        Regex::new(&format!(
+            r"\s*{}(?:\s*,\s*{}\s*)*",
+            atom_regex(),
+            atom_regex()
+        ))
+        .unwrap()
+    })
+}
+pub fn complete_regex() -> &'static Regex {
+    COMPLETE.get_or_init(|| {
+        Regex::new(&format!(
+            r"(?:\s*{}\s*:\s*{}\s*)",
+            group_regex(),
+            group_regex(),
+        ))
+        .unwrap()
+    })
+}
+pub fn collection_regex() -> &'static Regex {
+    COLLECTION.get_or_init(|| {
+        Regex::new(&format!(
+            r"\s*{}\s*(?:\.\s*{}\s*)*",
+            complete_regex(),
+            complete_regex()
+        ))
+        .unwrap()
+    })
+}
+
+pub fn translation_flag_regex() -> &'static Regex {
+    TRANSLATION_FLAG.get_or_init(|| Regex::new(r"--\w+").unwrap())
 }
