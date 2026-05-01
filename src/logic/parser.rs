@@ -10,14 +10,17 @@ pub struct ChaptersAndVerses {
 pub fn get_cites(buffer: &String) -> Vec<Query> {
     let mut matches: Vec<Query> = Vec::new();
     for input in buffer.split(";") {
-        let book_to_parse = Book::from_string(input.split(" ").collect::<Vec<&str>>()[0]);
-        let body_to_pars = input.split(" ").collect::<Vec<&str>>()[1..].join("");
+        let splited_input: Vec<&str> = input.split(" ").collect();
+        let book_to_parse = Book::from_string(splited_input[0]);
+        let body_to_parse = splited_input[1..splited_input.len() - 1].join("");
+        let translation_to_parse = splited_input[splited_input.len() - 1];
 
         if let Some(matched_book) = book_to_parse {
-            let indices = get_chapter_and_verse(&body_to_pars);
+            let indices = get_chapter_and_verse(&body_to_parse);
+            let translation = get_translation(translation_to_parse);
 
             if indices.chapters.len() > 0 && indices.verses.len() > 0 {
-                let mut cites = build_cites(matched_book, indices);
+                let mut cites = build_cites(matched_book, indices, translation);
                 matches.append(&mut cites);
             }
         }
@@ -25,7 +28,7 @@ pub fn get_cites(buffer: &String) -> Vec<Query> {
     matches
 }
 
-pub fn build_cites(book: Book, indices: ChaptersAndVerses) -> Vec<Query> {
+pub fn build_cites(book: Book, indices: ChaptersAndVerses, translation: String) -> Vec<Query> {
     let mut to_return: Vec<Query> = Vec::new();
     for (chapters_group, verses_group) in indices.chapters.iter().zip(indices.verses.iter()) {
         for chapters in chapters_group {
@@ -34,11 +37,16 @@ pub fn build_cites(book: Book, indices: ChaptersAndVerses) -> Vec<Query> {
                     book: book,
                     chapter: chapters.clone(),
                     verse: verses.clone(),
+                    translation: translation.clone(),
                 })
             }
         }
     }
     to_return
+}
+
+pub fn get_translation(input: &str) -> String {
+    String::new()
 }
 
 pub fn get_chapter_and_verse(input: &str) -> ChaptersAndVerses {

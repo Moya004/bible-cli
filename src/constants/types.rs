@@ -22,15 +22,17 @@ pub struct Query {
     pub book: Book,
     pub chapter: IndexVariation,
     pub verse: IndexVariation,
+    pub translation: String,
 }
 
 impl Query {
     pub fn as_string(&self) -> String {
         format!(
-            "Libro: {}\r\nCapitulo(s): {}\r\nVersiculo(s): {}\r\n\n",
+            "Libro: {}\r\nCapitulo(s): {}\r\nVersiculo(s): {}\r\nTraduccion:{}\r\n",
             self.book.as_string(),
             self.chapter.as_string(),
-            self.verse.as_string()
+            self.verse.as_string(),
+            self.translation,
         )
     }
 }
