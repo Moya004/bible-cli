@@ -49,17 +49,17 @@ pub fn get_chapter_and_verse(input: &str) -> ChaptersAndVerses {
     let complete = format!(r"(?:{group}:{group})");
     let collection = format!(r"{complete}(?:\.{complete})*");
 
-    let reColl = Regex::new(&collection).unwrap();
-    let reCom = Regex::new(&complete).unwrap();
+    let re_coll = Regex::new(&collection).unwrap();
+    let re_com = Regex::new(&complete).unwrap();
 
     let mut to_return: ChaptersAndVerses = ChaptersAndVerses {
         chapters: Vec::new(),
         verses: Vec::new(),
     };
 
-    if reColl.is_match(input) {
+    if re_coll.is_match(input) {
         for complete_item in input.split(".") {
-            if reCom.is_match(complete_item) {
+            if re_com.is_match(complete_item) {
                 let to_search: Vec<&str> = complete_item.split(":").collect();
 
                 to_return
@@ -81,22 +81,22 @@ fn get_index_variations(input: &str) -> Vec<IndexVariation> {
     let atom = format!(r"(?:{single}|{list})");
     let group = format!(r"{atom}(?:,{atom})*");
 
-    let reGroup = Regex::new(&group).unwrap();
-    let reList = Regex::new(&list).unwrap();
-    let reSingle = Regex::new(&single).unwrap();
+    let re_group = Regex::new(&group).unwrap();
+    let re_list = Regex::new(&list).unwrap();
+    let re_single = Regex::new(&single).unwrap();
 
     let mut to_return: Vec<IndexVariation> = Vec::new();
 
-    if reGroup.is_match(input) {
+    if re_group.is_match(input) {
         for group in input.split(",") {
-            if reList.is_match(group) {
+            if re_list.is_match(group) {
                 let low_high: Vec<u8> = group
                     .split("-")
                     .into_iter()
                     .map(|num| num.parse::<u8>().expect("No valid u8 number"))
                     .collect();
                 to_return.push(IndexVariation::List(low_high[0]..=low_high[1]));
-            } else if reSingle.is_match(group) {
+            } else if re_single.is_match(group) {
                 to_return.push(IndexVariation::Single(
                     group.parse::<u8>().expect("No valid u8 number"),
                 ));
