@@ -18,13 +18,13 @@ impl IndexVariation {
 }
 
 #[derive(Debug, Clone)]
-pub struct Cite {
+pub struct Query {
     pub book: Book,
     pub chapter: IndexVariation,
     pub verse: IndexVariation,
 }
 
-impl Cite {
+impl Query {
     pub fn as_string(&self) -> String {
         format!(
             "Libro: {}\r\nCapitulo(s): {}\r\nVersiculo(s): {}\r\n\n",

@@ -1,4 +1,4 @@
-use crate::constants::types::{Book, Cite, IndexVariation};
+use crate::constants::types::{Book, IndexVariation, Query};
 use regex::Regex;
 
 #[derive(Debug)]
@@ -7,8 +7,8 @@ pub struct ChaptersAndVerses {
     verses: Vec<Vec<IndexVariation>>,
 }
 
-pub fn get_cites(buffer: &String) -> Vec<Cite> {
-    let mut matches: Vec<Cite> = Vec::new();
+pub fn get_cites(buffer: &String) -> Vec<Query> {
+    let mut matches: Vec<Query> = Vec::new();
     for input in buffer.split(";") {
         let book_to_parse = Book::from_string(input.split(" ").collect::<Vec<&str>>()[0]);
         let body_to_pars = input.split(" ").collect::<Vec<&str>>()[1..].join("");
@@ -25,12 +25,12 @@ pub fn get_cites(buffer: &String) -> Vec<Cite> {
     matches
 }
 
-pub fn build_cites(book: Book, indices: ChaptersAndVerses) -> Vec<Cite> {
-    let mut to_return: Vec<Cite> = Vec::new();
+pub fn build_cites(book: Book, indices: ChaptersAndVerses) -> Vec<Query> {
+    let mut to_return: Vec<Query> = Vec::new();
     for (chapters_group, verses_group) in indices.chapters.iter().zip(indices.verses.iter()) {
         for chapters in chapters_group {
             for verses in verses_group {
-                to_return.push(Cite {
+                to_return.push(Query {
                     book: book,
                     chapter: chapters.clone(),
                     verse: verses.clone(),
