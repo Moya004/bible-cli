@@ -95,12 +95,6 @@ static COLLECTION: OnceLock<Regex> = OnceLock::new();
 
 static TRANSLATION_FLAG: OnceLock<Regex> = OnceLock::new();
 
-// let list = format!(r"{single}-{single}");
-// let atom = format!(r"(?:{single}|{list})");
-// let group = format!(r"{atom}(?:,{atom})*");
-// let complete = format!(r"(?:{group}:{group})");
-// let collection = format!(r"{complete}(?:\.{complete})*");
-
 /** Return a Vec of the compiled regular expresions of the BOOKS constant*/
 pub fn compiled_books() -> &'static Vec<(&'static str, Regex)> {
     COMPILED_BOOKS_RE.get_or_init(|| {

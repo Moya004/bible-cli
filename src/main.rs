@@ -3,7 +3,7 @@ mod db;
 mod logic;
 
 use db::seeder::load_bible_structure;
-use logic::{buffer::Buffer, parser::get_cites};
+use logic::{buffer::Buffer, parser::get_queries};
 use std::fmt::Write as WriteFmt;
 use std::io::{Write, stdin, stdout};
 use std::path::PathBuf;
@@ -127,7 +127,7 @@ fn main() {
 
         let input_to_process = buffer.read_line(content);
 
-        let processed_input: Vec<String> = get_cites(&input_to_process)
+        let processed_input: Vec<String> = get_queries(&input_to_process)
             .iter()
             .map(|cite| cite.as_string())
             .collect();

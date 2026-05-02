@@ -2,7 +2,6 @@ use crate::constants::{
     cons::{collection_regex, list_regex, single_regex, translation_flag_regex},
     types::{Book, IndexVariation, Query},
 };
-use regex::Regex;
 
 #[derive(Debug)]
 pub struct ChaptersAndVerses {
@@ -20,7 +19,7 @@ pub fn get_queries(buffer: &String) -> Vec<Query> {
 
             let translation = match translation_flag_regex().find(input) {
                 Some(flag) => get_translation(&input[flag.range()]),
-                None => String::from("RVR1060"),
+                None => String::from("RVR1960"),
             };
 
             let mut queries = build_cites(matched_book, indices, translation);
@@ -48,6 +47,7 @@ pub fn build_cites(book: Book, indices: ChaptersAndVerses, translation: String) 
     to_return
 }
 
+//TODO: refactorizar como se descargan y comprueban las traducciones
 pub fn get_translation(input: &str) -> String {
     String::new()
 }
