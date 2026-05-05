@@ -1,5 +1,5 @@
 use regex::Regex;
-use std::sync::OnceLock;
+use std::{path::PathBuf, sync::OnceLock};
 
 pub static BOOKS: &[(&str, &str)] = &[
     // Pentateuco
@@ -83,6 +83,12 @@ pub static BOOKS: &[(&str, &str)] = &[
     ("Judas", r"(?i)\b(Judas|Jud|Jd)\b"),
     ("Apocalipsis", r"(?i)\b(Apocalipsis|Apoc|Ap|Rev)\b"),
 ];
+
+pub const TABLES_SCHEMA: &str = include_str!("../db/schemas/tables.sql");
+
+pub fn project_root() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+}
 
 static COMPILED_BOOKS_RE: OnceLock<Vec<(&'static str, Regex)>> = OnceLock::new();
 

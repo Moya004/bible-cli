@@ -1,15 +1,9 @@
 use csv::Reader;
 use rusqlite::{Connection, Error, Result};
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
-use crate::constants::cons::compiled_books;
-
-const TABLES_SCHEMA: &str = include_str!("./schemas/tables.sql");
-
-fn project_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-}
+use crate::constants::cons::{TABLES_SCHEMA, compiled_books, project_root};
 
 pub fn load_bible_structure() -> Result<()> {
     let conn = Connection::open(project_root().join("./database.sqlite3"))?;
