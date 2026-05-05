@@ -1,8 +1,10 @@
-use crate::constants::{
-    cons::{collection_regex, list_regex, single_regex, translation_flag_regex},
-    types::{Book, IndexVariation},
+use crate::{
+    business::domain::{Book, Query},
+    constants::{
+        cons::{collection_regex, list_regex, single_regex, translation_flag_regex},
+        types::IndexVariation,
+    },
 };
-use crate::query_handler::Query;
 
 #[derive(Debug)]
 pub struct ChaptersAndVerses {
