@@ -1,7 +1,8 @@
 use crate::constants::{
     cons::{collection_regex, list_regex, single_regex, translation_flag_regex},
-    types::{Book, IndexVariation, Query},
+    types::{Book, IndexVariation},
 };
+use crate::query_handler::Query;
 
 #[derive(Debug)]
 pub struct ChaptersAndVerses {
@@ -37,8 +38,8 @@ pub fn build_cites(book: Book, indices: ChaptersAndVerses, translation: String) 
             for verses in verses_group {
                 to_return.push(Query {
                     book: book,
-                    chapter: chapters.clone(),
-                    verse: verses.clone(),
+                    chapters: chapters.clone(),
+                    verses: verses.clone(),
                     translation: translation.clone(),
                 })
             }

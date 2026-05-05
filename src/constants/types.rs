@@ -1,6 +1,6 @@
-use std::ops::RangeInclusive;
-
 use crate::constants::cons::{BOOKS, compiled_books};
+use std::fmt::{self, Display};
+use std::ops::RangeInclusive;
 
 #[derive(Debug, Clone)]
 pub enum IndexVariation {
@@ -8,32 +8,12 @@ pub enum IndexVariation {
     List(RangeInclusive<u8>),
 }
 
-impl IndexVariation {
-    pub fn as_string(&self) -> String {
+impl Display for IndexVariation {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            IndexVariation::List(r) => format!("{}-{}", r.start(), r.end()),
-            IndexVariation::Single(s) => format!("{}", s),
+            IndexVariation::List(r) => write!(f, "{}-{}", r.start(), r.end()),
+            IndexVariation::Single(s) => write!(f, "{}", s),
         }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Query {
-    pub book: Book,
-    pub chapter: IndexVariation,
-    pub verse: IndexVariation,
-    pub translation: String,
-}
-
-impl Query {
-    pub fn as_string(&self) -> String {
-        format!(
-            "Libro: {}\r\nCapitulo(s): {}\r\nVersiculo(s): {}\r\nTraduccion: {}\r\n",
-            self.book.as_string(),
-            self.chapter.as_string(),
-            self.verse.as_string(),
-            self.translation,
-        )
     }
 }
 
@@ -269,5 +249,11 @@ impl Book {
                 "Apocalipsis" => Some(Book::Apocalipsis),
                 _ => None,
             })
+    }
+}
+
+impl Display for Book {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_string())
     }
 }
