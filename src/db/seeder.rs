@@ -1,7 +1,7 @@
 use csv::Reader;
 use rusqlite::{Connection, Error, Result};
 
-use std::path::Path;
+use std::{path::Path, thread, time::Duration};
 
 use crate::constants::cons::{TABLES_SCHEMA, compiled_books, project_root};
 
@@ -83,7 +83,7 @@ pub fn load_traduction<P: AsRef<Path>>(path: P) -> Result<(), Error> {
         if let Some((cannonical_name, _)) = matched_book {
             println!("{} {}:{} -> {}", cannonical_name, chapter, verse, text);
 
-            match conn.execute("INSERT INTO TEXTO_VERSO(libro, capitulo, verso, translation_id, texto) VALUES(?1, ?2, ?3, ?4, ?5);", [book, chapter, verse, &translation_id.to_string(), text]) {
+            match conn.execute("INSERT INTO TEXTO_VERSO(libro, capitulo, verso, translation_id, texto) VALUES(?1, ?2, ?3, ?4, ?5);", [cannonical_name, chapter, verse, &translation_id.to_string(), text]) {
             Ok(_) => {
                 println!("{} {}:{} -> insertado con exito ", cannonical_name, chapter, verse)
             },
@@ -91,7 +91,10 @@ pub fn load_traduction<P: AsRef<Path>>(path: P) -> Result<(), Error> {
             Err(opss) => {
             println!("{} {}:{} -> {} ", cannonical_name, chapter, verse, opss);
         },
-        }
+    }
+        } else {
+            println!("{}, no matcheo", book);
+            thread::sleep(Duration::from_millis(2000));
         }
     }
 
