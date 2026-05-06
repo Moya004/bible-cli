@@ -264,15 +264,23 @@ impl Display for Query {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct Translation {
+    pub id: u8,
+    pub code: String,
+    pub name: String,
+}
+#[derive(Debug)]
 pub struct Cite {
-    book: Book,
-    chapter: u8,
-    verse: u8,
-    text: String,
+    pub book: Book,
+    pub chapter: u8,
+    pub verse: u8,
+    pub text: String,
+    pub translation: Translation,
 }
 
 impl Cite {
     pub fn validate(&self) -> Result<(), String> {
-        Ok(())
+        todo!("Not implemented yet");
     }
 }
