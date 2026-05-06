@@ -1,6 +1,8 @@
+mod business;
 mod constants;
 mod db;
 mod logic;
+mod repositories;
 
 use db::seeder::load_bible_structure;
 use logic::{buffer::Buffer, parser::get_queries};
@@ -17,8 +19,9 @@ use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 use termion::{clear, terminal_size};
 
+use crate::business::repositories::VerseRepository;
 use crate::db::seeder::load_traduction;
-
+use crate::repositories::verse_text_sqlite_repository::VerseTextSqliteRepository;
 fn main() {
     let mut buffer = Buffer::new();
     let _ = load_bible_structure();
@@ -125,15 +128,29 @@ fn main() {
         write!(output, "{}{}", clear::All, cursor::Goto(1, 1)).unwrap();
         output.flush().unwrap();
 
-        let input_to_process = buffer.read_line(content);
+        let input_to_process = buffer.read_line(String::from(content));
 
-        let processed_input: Vec<String> = get_queries(&input_to_process)
+        let processed_input = get_queries(&input_to_process);
+        // for a in processed_input {
+        //     println!("{}", a);
+        // }
+
+        // processed_input.iter().for_each(|q| {
+        //     println!("{q}");
+        // });
+
+        let verse_repo = VerseTextSqliteRepository::new().unwrap();
+
+        processed_input
             .iter()
-            .map(|cite| cite.as_string())
-            .collect();
-        for a in processed_input {
-            println!("{}", a);
-        }
+            .for_each(|q| match verse_repo.get_text(q) {
+                Ok(v) => {
+                    println!("{v}");
+                }
+                Err(_) => {
+                    return;
+                }
+            });
 
         thread::sleep(Duration::from_secs(10));
     }
