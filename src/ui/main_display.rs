@@ -17,7 +17,7 @@ fn get_cursor(output: &mut RawTerminal<Stdout>) -> (u16, u16) {
 
 pub fn main_controls<T: BufferRepository>(
     buffer: &mut Buffer,
-    bufferRepo: &T,
+    buffer_repo: &T,
 ) -> Result<String, Error> {
     let input = stdin();
     let mut content = String::new();
@@ -99,7 +99,7 @@ pub fn main_controls<T: BufferRepository>(
             Key::Ctrl('c') => {
                 output.suspend_raw_mode().unwrap();
                 write!(output, "{}{}", clear::All, cursor::Goto(1, 1)).unwrap();
-                match buffer.save_history(bufferRepo) {
+                match buffer.save_history(buffer_repo) {
                     Ok(_) => {}
                     Err(error) => {
                         println!("Error al guardar historico: {}", error);
