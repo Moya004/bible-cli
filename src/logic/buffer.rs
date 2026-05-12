@@ -53,14 +53,16 @@ impl Buffer {
         match repo.load_history(10_000 as u16 - self.history.len() as u16) {
             Ok(history) => {
                 self.history.extend(history);
+                self.history_pointer = self.history.len();
             }
             Err(error) => return Err(error),
         }
+
         Ok(())
     }
 
     pub fn save_history<T: BufferRepository>(&self, repo: &T) -> Result<(), Error> {
-        match repo.save_history(self.history.clone()) {
+        match repo.save_history(&self.history) {
             Ok(nothing) => Ok(nothing),
             Err(error) => Err(error),
         }
