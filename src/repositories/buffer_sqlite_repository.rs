@@ -1,6 +1,6 @@
 use crate::{business::repositories::BufferRepository, constants::cons::project_root};
 use array_deque::ArrayDeque as Deque;
-use rusqlite::{Connection, params};
+use rusqlite::{Connection, Error, params};
 
 pub struct BufferSqliteRepository {
     connection: Connection,
@@ -49,13 +49,16 @@ impl BufferRepository for BufferSqliteRepository {
         Ok(to_return)
     }
 
-    fn save_history(&self, history: Deque<String>) -> Result<(), rusqlite::Error> {
+    fn save_history(&self, history: &Deque<String>) -> Result<(), Error> {
         let mut stm = self.connection.prepare(
             "INSERT INTO BUFFER_HISTORICO (contenido, fecha) VALUES (?1, datetime('now', 'localtime'))",
         )?;
 
         for entry in history {
-            stm.execute([entry])?;
+            match stm.execute([entry]) {
+                Ok(_) => {}
+                Err(error) => return Err(error),
+            };
         }
         Ok(())
     }
