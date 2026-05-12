@@ -25,6 +25,12 @@ CREATE TABLE TEXTO_VERSO(
     REFERENCES traductions(id)
 );
 
+CREATE TABLE BUFFER_HISTORICO(
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  contenido   TEXT NOT NULL,
+  fecha       CURRENT_TIMESTAMP
+);
+
 INSERT INTO biblia (libro, capitulo, verso) VALUES
 ('Génesis',1,1),
 ('Génesis',1,2),

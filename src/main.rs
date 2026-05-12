@@ -12,10 +12,12 @@ use std::path::PathBuf;
 
 use crate::business::repositories::VerseRepository;
 use crate::db::seeder::load_traduction;
+use crate::repositories::buffer_sqlite_repository::BufferSqliteRepository;
 use crate::repositories::verse_text_sqlite_repository::VerseTextSqliteRepository;
 use crate::ui::main_display::{continue_controls, main_controls};
 fn main() {
     let mut buffer = Buffer::new();
+    let buffer_repo = BufferSqliteRepository::new().unwrap();
     let _ = load_bible_structure();
     let _ = load_traduction(
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -25,7 +27,7 @@ fn main() {
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("./traducciones/DHH-Dios_Habla_Hoy.csv"),
     );
     loop {
-        let input_to_process = main_controls(&mut buffer).unwrap();
+        let input_to_process = main_controls(&mut buffer, &buffer_repo).unwrap();
 
         let processed_input = get_queries(&input_to_process);
         // for a in processed_input {

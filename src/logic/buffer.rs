@@ -1,14 +1,18 @@
-use array_deque::StackArrayDeque as SDeque;
+use array_deque::ArrayDeque as Deque;
+use rusqlite::Error;
+
+use crate::business::repositories::BufferRepository;
 
 pub struct Buffer {
-    history: SDeque<String, 10_000>,
+    history: Deque<String>,
     history_pointer: usize,
 }
 
+//TODO: Agregar load buffer history
 impl Buffer {
     pub fn new() -> Self {
         Self {
-            history: SDeque::new(),
+            history: Deque::new(10_000),
             history_pointer: 0,
         }
     }
@@ -43,5 +47,16 @@ impl Buffer {
         };
 
         input_to_return
+    }
+
+    pub fn load_history<T: BufferRepository>(&mut self, repo: T) {
+        todo!()
+    }
+
+    pub fn save_history<T: BufferRepository>(&self, repo: &T) -> Result<(), Error> {
+        match repo.save_history(self.history.clone()) {
+            Ok(nothing) => Ok(nothing),
+            Err(error) => Err(error),
+        }
     }
 }

@@ -1,5 +1,6 @@
-use std::io::Error;
+use std::io::{Error, Stdout};
 
+use crate::business::repositories::BufferRepository;
 use crate::logic::buffer::Buffer;
 use std::fmt::Write as WriteFmt;
 use std::io::{Write, stdin, stdout};
@@ -7,10 +8,17 @@ use std::process::exit;
 use termion::cursor::{self, DetectCursorPos};
 use termion::event::Key;
 use termion::input::TermRead;
-use termion::raw::IntoRawMode;
+use termion::raw::{IntoRawMode, RawTerminal};
 use termion::{clear, terminal_size};
 
-pub fn main_controls(buffer: &mut Buffer) -> Result<String, Error> {
+fn get_cursor(output: &mut RawTerminal<Stdout>) -> (u16, u16) {
+    output.cursor_pos().unwrap_or((4, 1))
+}
+
+pub fn main_controls<T: BufferRepository>(
+    buffer: &mut Buffer,
+    bufferRepo: &T,
+) -> Result<String, Error> {
     let input = stdin();
     let mut content = String::new();
     print!("\x1B[2J\x1B[1;1H");
@@ -21,11 +29,11 @@ pub fn main_controls(buffer: &mut Buffer) -> Result<String, Error> {
         Err(_) => (),
     }
 
-    let (_, cursor_y) = output.cursor_pos().unwrap();
+    let (_, cursor_y) = get_cursor(&mut output);
     for key in input.keys() {
         match key.as_ref().unwrap() {
             Key::Left => {
-                let curr_coords = output.cursor_pos().unwrap();
+                let curr_coords = get_cursor(&mut output);
                 if curr_coords.1 == cursor_y {
                     if curr_coords.0 > 4 {
                         write!(output, "{}", cursor::Left(1)).unwrap()
@@ -46,7 +54,7 @@ pub fn main_controls(buffer: &mut Buffer) -> Result<String, Error> {
                 }
             }
             Key::Right => {
-                let curr_coords = output.cursor_pos().unwrap();
+                let curr_coords = get_cursor(&mut output);
                 let dimensions = terminal_size().unwrap();
                 let (dx, dy) = (
                     ((content.chars().count() + 4) % (dimensions.0 as usize)) as u16,
@@ -81,7 +89,7 @@ pub fn main_controls(buffer: &mut Buffer) -> Result<String, Error> {
                 write!(output, "{}", cursor::Goto(dx, cursor_y + dy)).unwrap();
             }
             Key::Backspace => {
-                if output.cursor_pos().unwrap().0 > 4 {
+                if get_cursor(&mut output).0 > 4 {
                     write!(output, "{}", cursor::Left(1)).unwrap();
                     write!(output, " ").unwrap();
                     write!(output, "{}", cursor::Left(1)).unwrap();
@@ -91,6 +99,12 @@ pub fn main_controls(buffer: &mut Buffer) -> Result<String, Error> {
             Key::Ctrl('c') => {
                 output.suspend_raw_mode().unwrap();
                 write!(output, "{}{}", clear::All, cursor::Goto(1, 1)).unwrap();
+                match buffer.save_history(bufferRepo) {
+                    Ok(_) => {}
+                    Err(error) => {
+                        println!("Error al guardar historico: {}", error);
+                    }
+                };
                 exit(0);
             }
             Key::Char('\n') => break,
