@@ -1,6 +1,9 @@
 use rusqlite::Error;
 
-use crate::{business::domain::Query, constants::types::Passage};
+use crate::{
+    business::domain::Query,
+    constants::types::{BufferEntryVariation, Passage},
+};
 use array_deque::ArrayDeque as Deque;
 
 pub trait VerseRepository {
@@ -8,6 +11,6 @@ pub trait VerseRepository {
 }
 
 pub trait BufferRepository {
-    fn load_history(&self, limit: u16) -> Result<Vec<String>, Error>;
-    fn save_history(&self, history: &Deque<String>) -> Result<(), Error>;
+    fn load_history(&self, limit: u16) -> Result<Vec<BufferEntryVariation>, Error>;
+    fn save_history(&self, history: &Deque<BufferEntryVariation>) -> Result<(), Error>;
 }

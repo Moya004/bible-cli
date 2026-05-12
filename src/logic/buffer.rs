@@ -1,10 +1,10 @@
 use array_deque::ArrayDeque as Deque;
 use rusqlite::Error;
 
-use crate::business::repositories::BufferRepository;
+use crate::{business::repositories::BufferRepository, constants::types::BufferEntryVariation};
 
 pub struct Buffer {
-    history: Deque<String>,
+    history: Deque<BufferEntryVariation>,
     history_pointer: usize,
 }
 
@@ -18,7 +18,8 @@ impl Buffer {
     }
 
     pub fn save_on_history(&mut self, content: String) {
-        self.history.push_back(content.clone());
+        self.history
+            .push_back(BufferEntryVariation::New(content.clone()));
 
         if self.history_pointer <= self.history.len() {
             self.history_pointer = self.history.len();
@@ -28,14 +29,14 @@ impl Buffer {
     pub fn load_prev_entry(&mut self, content: &mut String) {
         if self.history_pointer > 0 {
             self.history_pointer -= 1;
-            *content = self.history[self.history_pointer].clone();
+            *content = self.history[self.history_pointer].to_string().clone();
         }
     }
 
     pub fn load_next_entry(&mut self, content: &mut String) {
         if self.history.len() > 0 && self.history_pointer < self.history.len() - 1 {
             self.history_pointer += 1;
-            *content = self.history[self.history_pointer].clone();
+            *content = self.history[self.history_pointer].to_string().clone();
         }
     }
     pub fn read_line(&mut self, input: String) -> String {

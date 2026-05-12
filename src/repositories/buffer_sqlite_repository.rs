@@ -1,4 +1,7 @@
-use crate::{business::repositories::BufferRepository, constants::cons::project_root};
+use crate::{
+    business::repositories::BufferRepository,
+    constants::{cons::project_root, types::BufferEntryVariation},
+};
 use array_deque::ArrayDeque as Deque;
 use rusqlite::{Connection, Error, params};
 
@@ -23,7 +26,7 @@ impl BufferSqliteRepository {
 }
 
 impl BufferRepository for BufferSqliteRepository {
-    fn load_history(&self, limit: u16) -> Result<Vec<String>, rusqlite::Error> {
+    fn load_history(&self, limit: u16) -> Result<Vec<BufferEntryVariation>, Error> {
         let mut to_return = vec![];
         let mut sql = self
             .connection
@@ -41,7 +44,7 @@ impl BufferRepository for BufferSqliteRepository {
 
         for i in query_iter {
             match i {
-                Ok(text) => to_return.push(text),
+                Ok(text) => to_return.push(BufferEntryVariation::Historic(text)),
                 Err(_) => {}
             }
         }
@@ -49,13 +52,19 @@ impl BufferRepository for BufferSqliteRepository {
         Ok(to_return)
     }
 
-    fn save_history(&self, history: &Deque<String>) -> Result<(), Error> {
+    fn save_history(&self, history: &Deque<BufferEntryVariation>) -> Result<(), Error> {
         let mut stm = self.connection.prepare(
             "INSERT INTO BUFFER_HISTORICO (contenido, fecha) VALUES (?1, datetime('now', 'localtime'))",
         )?;
 
         for entry in history {
-            match stm.execute([entry]) {
+            match entry {
+                BufferEntryVariation::Historic(_) => {
+                    continue;
+                }
+                BufferEntryVariation::New(_) => {}
+            }
+            match stm.execute([entry.to_string()]) {
                 Ok(_) => {}
                 Err(error) => return Err(error),
             };

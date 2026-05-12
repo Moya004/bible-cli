@@ -18,6 +18,22 @@ impl Display for IndexVariation {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum BufferEntryVariation {
+    Historic(String),
+    New(String),
+}
+
+impl Display for BufferEntryVariation {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            BufferEntryVariation::Historic(same) | BufferEntryVariation::New(same) => {
+                write!(f, "{}", same.to_string())
+            }
+        }
+    }
+}
+
 pub struct Passage(pub Vec<Cite>);
 
 impl Display for Passage {
