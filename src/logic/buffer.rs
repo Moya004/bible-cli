@@ -8,7 +8,6 @@ pub struct Buffer {
     history_pointer: usize,
 }
 
-//TODO: Agregar load buffer history
 impl Buffer {
     pub fn new() -> Self {
         Self {
@@ -17,7 +16,7 @@ impl Buffer {
         }
     }
 
-    pub fn save_on_history(&mut self, content: String) {
+    pub fn save_entry(&mut self, content: String) {
         self.history
             .push_back(BufferEntryVariation::New(content.clone()));
 
@@ -40,7 +39,7 @@ impl Buffer {
         }
     }
     pub fn read_line(&mut self, input: String) -> String {
-        self.save_on_history(input.clone());
+        self.save_entry(input.clone());
 
         let input_to_return: String = match input.trim().parse() {
             Ok(text) => text,
