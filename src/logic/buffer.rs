@@ -36,6 +36,9 @@ impl Buffer {
         if self.history.len() > 0 && self.history_pointer < self.history.len() - 1 {
             self.history_pointer += 1;
             *content = self.history[self.history_pointer].to_string().clone();
+        } else if self.history_pointer == self.history.len() - 1 {
+            self.history_pointer += 1;
+            *content = String::from("");
         }
     }
     pub fn read_line(&mut self, input: String) -> String {
