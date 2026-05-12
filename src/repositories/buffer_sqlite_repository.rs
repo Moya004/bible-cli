@@ -1,6 +1,6 @@
 use crate::{business::repositories::BufferRepository, constants::cons::project_root};
 use array_deque::ArrayDeque as Deque;
-use rusqlite::Connection;
+use rusqlite::{Connection, params};
 
 pub struct BufferSqliteRepository {
     connection: Connection,
@@ -23,8 +23,30 @@ impl BufferSqliteRepository {
 }
 
 impl BufferRepository for BufferSqliteRepository {
-    fn load_history(&self) -> Result<Vec<String>, rusqlite::Error> {
-        todo!()
+    fn load_history(&self, limit: u16) -> Result<Vec<String>, rusqlite::Error> {
+        let mut to_return = vec![];
+        let mut sql = self
+            .connection
+            .prepare("SELECT * FROM BUFFER_HISTORICO bf ORDER BY bf.fecha limit ?1")?;
+
+        let query_iter = match sql.query_map(params![limit], |row| {
+            Ok(row.get_unwrap::<_, String>("contenido"))
+        }) {
+            Ok(r) => r,
+            Err(error) => {
+                println!("An error occured when trying to get translation: {}", error);
+                return Err(error);
+            }
+        };
+
+        for i in query_iter {
+            match i {
+                Ok(text) => to_return.push(text),
+                Err(_) => {}
+            }
+        }
+
+        Ok(to_return)
     }
 
     fn save_history(&self, history: Deque<String>) -> Result<(), rusqlite::Error> {

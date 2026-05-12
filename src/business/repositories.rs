@@ -8,6 +8,6 @@ pub trait VerseRepository {
 }
 
 pub trait BufferRepository {
-    fn load_history(&self) -> Result<Vec<String>, Error>;
+    fn load_history(&self, limit: u16) -> Result<Vec<String>, Error>;
     fn save_history(&self, history: Deque<String>) -> Result<(), Error>;
 }

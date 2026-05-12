@@ -49,8 +49,14 @@ impl Buffer {
         input_to_return
     }
 
-    pub fn load_history<T: BufferRepository>(&mut self, repo: T) {
-        todo!()
+    pub fn load_history<T: BufferRepository>(&mut self, repo: &T) -> Result<(), Error> {
+        match repo.load_history(10_000 as u16 - self.history.len() as u16) {
+            Ok(history) => {
+                self.history.extend(history);
+            }
+            Err(error) => return Err(error),
+        }
+        Ok(())
     }
 
     pub fn save_history<T: BufferRepository>(&self, repo: &T) -> Result<(), Error> {

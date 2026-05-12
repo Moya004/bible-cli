@@ -9,6 +9,8 @@ use db::seeder::load_bible_structure;
 use logic::{buffer::Buffer, parser::get_queries};
 
 use std::path::PathBuf;
+use std::thread;
+use std::time::Duration;
 
 use crate::business::repositories::VerseRepository;
 use crate::db::seeder::load_traduction;
@@ -18,6 +20,18 @@ use crate::ui::main_display::{continue_controls, main_controls};
 fn main() {
     let mut buffer = Buffer::new();
     let buffer_repo = BufferSqliteRepository::new().unwrap();
+
+    match buffer.load_history(&buffer_repo) {
+        Ok(_) => {}
+        Err(error) => {
+            println!(
+                "No se pudo cargar el historico: {}\r\nContinuando...",
+                error
+            );
+            thread::sleep(Duration::from_secs(5));
+        }
+    }
+
     let _ = load_bible_structure();
     let _ = load_traduction(
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
