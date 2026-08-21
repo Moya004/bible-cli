@@ -1,4 +1,4 @@
-use clay_layout::{grow, id::Id};
+use clay_layout::grow;
 
 use crate::ui::design::Scope;
 use crate::ui::design::components::list::text_item;
@@ -8,6 +8,7 @@ use crate::ui::design::metrics::{Metrics, Role};
 use crate::ui::design::theme::Theme;
 use crate::ui::operator::action::Panel;
 use crate::ui::operator::frame::Frame;
+use crate::ui::operator::views::{QUEUE_ITEM, hovered};
 use crate::ui::operator::views::verses::state_of;
 
 /// Cola de versos preparados de antemano.
@@ -17,7 +18,6 @@ pub fn view<'render>(
     theme: &Theme,
     frame: &'render Frame<'render>,
     ids: ScrollIds,
-    selected: Id,
 ) {
     let focused = frame.focus == Panel::Queue;
 
@@ -46,8 +46,8 @@ pub fn view<'render>(
                         c,
                         metrics,
                         theme,
-                        state_of(index == frame.queue_index, focused),
-                        (index == frame.queue_index).then_some(selected),
+                        state_of(index == frame.queue_index, focused, hovered(frame, Panel::Queue) == Some(index)),
+                        Some(c.id_index(QUEUE_ITEM, index as u32)),
                         cite,
                     );
                 }

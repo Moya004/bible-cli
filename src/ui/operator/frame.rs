@@ -1,5 +1,6 @@
 use crate::ui::operator::action::Panel;
-use crate::ui::operator::state::{OperatorState, Scrolls};
+use crate::ui::operator::views::Hit;
+use crate::ui::operator::state::{BookEntry, OperatorState, Scrolls};
 
 pub struct VerseRow<'a> {
     pub number: String,
@@ -12,16 +13,19 @@ pub struct VerseRow<'a> {
 /// asi que todo lo que se dibuja se arma antes de maquetar. El texto de los
 /// versos y las citas de la cola se prestan del estado en vez de copiarse.
 pub struct Frame<'a> {
-    pub books: &'a [&'static str],
+    pub books: &'a [BookEntry],
     pub book: usize,
+    pub book_columns: usize,
     pub chapters: Vec<String>,
     pub chapter: usize,
+    pub chapter_columns: usize,
     pub verses: Vec<VerseRow<'a>>,
     pub verse: usize,
     pub queue: Vec<&'a str>,
     pub queue_index: usize,
 
     pub focus: Panel,
+    pub hit: Hit,
     pub in_query: bool,
     pub blank: bool,
     pub live: &'a str,
@@ -32,12 +36,14 @@ pub struct Frame<'a> {
 }
 
 impl<'a> Frame<'a> {
-    pub fn build(state: &'a OperatorState) -> Self {
+    pub fn build(state: &'a OperatorState, hit: Hit) -> Self {
         Self {
             books: &state.books,
             book: state.book,
+            book_columns: state.book_columns,
             chapters: state.chapters.iter().map(u8::to_string).collect(),
             chapter: state.chapter,
+            chapter_columns: state.chapter_columns,
             verses: state
                 .verses
                 .iter()
@@ -55,6 +61,7 @@ impl<'a> Frame<'a> {
             queue_index: state.queue_index,
 
             focus: state.focus,
+            hit,
             in_query: state.in_query,
             blank: state.blank,
             live: state

@@ -1,5 +1,5 @@
 use raylib::RaylibHandle;
-use raylib::consts::KeyboardKey;
+use raylib::consts::{KeyboardKey, MouseButton};
 
 /// Panel que tiene el foco del teclado.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -48,6 +48,12 @@ pub enum Action {
     InsertChar(char),
     Backspace,
     SubmitQuery,
+    /// Click: lleva el foco a ese panel y elige ese elemento
+    Click { panel: Panel, index: Option<usize> },
+    /// Doble click: proyecta lo elegido
+    Activate { panel: Panel, index: usize },
+    /// Rueda sobre un panel concreto, no sobre el que tiene el foco
+    Scroll { panel: Panel, delta: f32 },
     Quit,
 }
 
@@ -132,4 +138,67 @@ pub fn actions(rl: &mut RaylibHandle, in_query: bool) -> Vec<Action> {
 /// es lo que se espera al recorrer una lista larga.
 fn pressed(rl: &RaylibHandle, key: KeyboardKey) -> bool {
     rl.is_key_pressed(key) || rl.is_key_pressed_repeat(key)
+}
+
+/// Cuanto puede tardar el segundo click para que cuente como doble.
+const DOUBLE_CLICK: f64 = 0.35;
+
+/// Detecta el doble click, que raylib no trae hecho.
+#[derive(Default)]
+pub struct Clicks {
+    last: Option<(Panel, usize, f64)>,
+}
+
+impl Clicks {
+    /// Traduce lo que hace el raton sobre `hit` a intenciones.
+    ///
+    /// El desplazamiento va al panel bajo el puntero y no al que tiene el foco:
+    /// es lo que uno espera de la rueda, y deja mirar una lista sin perder la
+    /// seleccion de otra.
+    pub fn actions(
+        &mut self,
+        rl: &RaylibHandle,
+        panel: Option<Panel>,
+        index: Option<usize>,
+        scroll_step: f32,
+    ) -> Vec<Action> {
+        let mut actions = Vec::new();
+        let Some(panel) = panel else {
+            return actions;
+        };
+
+        let wheel = rl.get_mouse_wheel_move();
+        if wheel != 0. {
+            actions.push(Action::Scroll {
+                panel,
+                delta: -wheel * scroll_step,
+            });
+        }
+
+        if !rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
+            return actions;
+        }
+
+        actions.push(Action::Click { panel, index });
+
+        let Some(index) = index else {
+            self.last = None;
+            return actions;
+        };
+
+        let now = rl.get_time();
+        let repeated = self
+            .last
+            .is_some_and(|(p, i, t)| p == panel && i == index && now - t <= DOUBLE_CLICK);
+
+        if repeated {
+            actions.push(Action::Activate { panel, index });
+            // Se olvida el ultimo, o un tercer click encadenaria otro envio.
+            self.last = None;
+        } else {
+            self.last = Some((panel, index, now));
+        }
+
+        actions
+    }
 }

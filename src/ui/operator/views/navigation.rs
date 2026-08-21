@@ -1,15 +1,14 @@
-use clay_layout::{grow, id::Id, layout::Sizing};
+use clay_layout::grow;
 
 use crate::ui::design::Scope;
-use crate::ui::design::components::grid::{GridProps, grid};
+use crate::ui::design::components::grid::{Block, GridProps, grid};
 use crate::ui::design::components::panel::{PanelProps, panel};
 use crate::ui::design::components::scroll_area::{ScrollIds, scroll_area};
 use crate::ui::design::metrics::Metrics;
-use crate::ui::design::space::Space;
 use crate::ui::design::theme::Theme;
 use crate::ui::operator::action::Panel;
 use crate::ui::operator::frame::Frame;
-use crate::ui::operator::state::{BOOK_COLUMNS, CHAPTER_COLUMNS};
+use crate::ui::operator::views::{BOOKS_ITEM, CHAPTERS_ITEM, hovered};
 
 /// Panel de libros: los 66 en rejilla.
 ///
@@ -21,7 +20,6 @@ pub fn books<'render>(
     theme: &Theme,
     frame: &'render Frame<'render>,
     ids: ScrollIds,
-    selected: Id,
 ) {
     let focused = frame.focus == Panel::Books;
 
@@ -36,19 +34,31 @@ pub fn books<'render>(
             height: grow!(),
         },
         |c| {
+            // El vector es local: Clay guarda punteros al texto, no a los
+            // `Block`, y las cadenas viven en el fotograma.
+            let blocks: Vec<Block> = frame
+                .books
+                .iter()
+                .map(|entry| Block {
+                    label: entry.abbreviation,
+                    sublabel: Some(entry.name),
+                    accent: Some(entry.accent),
+                })
+                .collect();
+
             scroll_area(c, metrics, ids, frame.scroll.books, 0, |c| {
                 grid(
                     c,
                     metrics,
                     theme,
-                    GridProps {
-                        columns: BOOK_COLUMNS,
-                        cell: grow!(),
+                    &GridProps {
+                        columns: frame.book_columns,
                         selected: Some(frame.book),
+                        hovered: hovered(frame, Panel::Books),
                         focused,
-                        selected_id: Some(selected),
+                        id_label: BOOKS_ITEM,
                     },
-                    frame.books,
+                    &blocks,
                 );
             });
         },
@@ -62,7 +72,6 @@ pub fn chapters<'render>(
     theme: &Theme,
     frame: &'render Frame<'render>,
     ids: ScrollIds,
-    selected: Id,
 ) {
     let focused = frame.focus == Panel::Chapters;
 
@@ -77,22 +86,25 @@ pub fn chapters<'render>(
             height: grow!(),
         },
         |c| {
+            let blocks: Vec<Block> = frame
+                .chapters
+                .iter()
+                .map(|number| Block::new(number))
+                .collect();
+
             scroll_area(c, metrics, ids, frame.scroll.chapters, 0, |c| {
                 grid(
                     c,
                     metrics,
                     theme,
-                    GridProps {
-                        columns: CHAPTER_COLUMNS,
-                        // Ancho fijo: los numeros quedan en columnas parejas y
-                        // no bailan al pasar de un libro de 4 capitulos a uno
-                        // de 150.
-                        cell: Sizing::Fixed(metrics.space(Space::Xl) as f32),
+                    &GridProps {
+                        columns: frame.chapter_columns,
                         selected: Some(frame.chapter),
+                        hovered: hovered(frame, Panel::Chapters),
                         focused,
-                        selected_id: Some(selected),
+                        id_label: CHAPTERS_ITEM,
                     },
-                    &frame.chapters,
+                    &blocks,
                 );
             });
         },

@@ -1,4 +1,4 @@
-use clay_layout::{grow, id::Id};
+use clay_layout::grow;
 
 use crate::ui::design::Scope;
 use crate::ui::design::components::list::verse_item;
@@ -8,6 +8,7 @@ use crate::ui::design::metrics::{Metrics, Role};
 use crate::ui::design::theme::{State, Theme};
 use crate::ui::operator::action::Panel;
 use crate::ui::operator::frame::Frame;
+use crate::ui::operator::views::{VERSES_ITEM, hovered};
 
 /// Panel de versos del capitulo, con su texto.
 ///
@@ -20,7 +21,6 @@ pub fn view<'render>(
     theme: &Theme,
     frame: &'render Frame<'render>,
     ids: ScrollIds,
-    selected: Id,
 ) {
     let focused = frame.focus == Panel::Verses;
 
@@ -49,8 +49,8 @@ pub fn view<'render>(
                         c,
                         metrics,
                         theme,
-                        state_of(index == frame.verse, focused),
-                        (index == frame.verse).then_some(selected),
+                        state_of(index == frame.verse, focused, hovered(frame, Panel::Verses) == Some(index)),
+                        Some(c.id_index(VERSES_ITEM, index as u32)),
                         &verse.number,
                         verse.text,
                     );
@@ -62,10 +62,11 @@ pub fn view<'render>(
 
 /// Un panel sin foco sigue mostrando cual es su elemento elegido, pero mas
 /// apagado: en vivo hay que poder ver de un vistazo donde quedo cada panel.
-pub fn state_of(selected: bool, focused: bool) -> State {
-    match (selected, focused) {
-        (true, true) => State::Selected,
-        (true, false) => State::Focused,
+pub fn state_of(selected: bool, focused: bool, hovered: bool) -> State {
+    match (selected, focused, hovered) {
+        (true, true, _) => State::Selected,
+        (true, false, _) => State::Focused,
+        (false, _, true) => State::Hover,
         _ => State::Normal,
     }
 }

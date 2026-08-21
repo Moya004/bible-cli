@@ -23,9 +23,11 @@ pub enum Role {
     VerseNumber,
     /// Texto secundario: traduccion, ayudas, estado
     Label,
+    /// Letra menuda: el nombre completo bajo la abreviatura de un libro
+    Caption,
 }
 
-const ROLE_COUNT: usize = 6;
+const ROLE_COUNT: usize = 7;
 
 #[derive(Debug, Clone, Copy)]
 pub struct RoleStyle {
@@ -109,6 +111,7 @@ impl Metrics {
             RoleStyle::new(Weight::Regular, Emphasis::Normal, 0, 1), // Body
             RoleStyle::new(Weight::Regular, Emphasis::Dim, 0, 1), // VerseNumber
             RoleStyle::new(Weight::Regular, Emphasis::Dim, 0, 1), // Label
+            RoleStyle::new(Weight::Regular, Emphasis::Dim, 0, 1), // Caption
         ],
         space: SpaceScale::TERMINAL,
         border: 1,
@@ -125,6 +128,7 @@ impl Metrics {
             RoleStyle::new(Weight::Regular, Emphasis::Normal, 17, 24), // Body
             RoleStyle::new(Weight::Bold, Emphasis::Normal, 13, 24), // VerseNumber
             RoleStyle::new(Weight::Regular, Emphasis::Normal, 14, 20), // Label
+            RoleStyle::new(Weight::Regular, Emphasis::Normal, 10, 13), // Caption
         ],
         space: SpaceScale::WINDOW,
         border: 1,
@@ -142,6 +146,7 @@ impl Metrics {
             RoleStyle::new(Weight::Regular, Emphasis::Normal, 48, 62), // Body
             RoleStyle::new(Weight::Bold, Emphasis::Normal, 32, 44), // VerseNumber
             RoleStyle::new(Weight::Regular, Emphasis::Normal, 28, 38), // Label
+            RoleStyle::new(Weight::Regular, Emphasis::Normal, 22, 30), // Caption
         ],
         space: SpaceScale::PROJECTOR,
         border: 0,

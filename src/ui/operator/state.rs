@@ -1,14 +1,26 @@
+use clay_layout::color::Color;
+
 use crate::business::domain::{Book, Cite};
 use crate::business::repositories::VerseRepository;
 use crate::constants::cons::BOOKS;
 use crate::constants::types::IndexVariation;
 use crate::logic::parser::get_queries;
+use crate::ui::design::theme::section_color;
 use crate::ui::operator::action::{Action, Panel};
 use crate::ui::projector::protocol::Command;
 
-/// Celdas por fila de cada rejilla. Las usan el estado, para saber que hace una
-/// flecha arriba, y la vista, para dibujar las mismas filas.
-pub const BOOK_COLUMNS: usize = 3;
+/// Datos fijos de un libro para la rejilla.
+///
+/// Se arman una sola vez: no cambian nunca, y rehacerlos por fotograma seria
+/// gastar por gusto.
+pub struct BookEntry {
+    pub name: &'static str,
+    pub abbreviation: &'static str,
+    pub accent: Color,
+}
+
+/// Celdas por fila de cada rejilla, mientras no se hayan medido los paneles.
+pub const BOOK_COLUMNS: usize = 6;
 pub const CHAPTER_COLUMNS: usize = 6;
 
 pub const DEFAULT_TRANSLATION: &str = "RVR1960";
@@ -46,7 +58,7 @@ pub struct OperatorState {
     /// La barra de consulta tiene el teclado
     pub in_query: bool,
 
-    pub books: Vec<&'static str>,
+    pub books: Vec<BookEntry>,
     pub book: usize,
     pub chapters: Vec<u8>,
     pub chapter: usize,
@@ -65,6 +77,19 @@ pub struct OperatorState {
     pub query_caret: usize,
     pub query_h_scroll: f32,
     pub scroll: Scrolls,
+
+    /// Columnas de cada rejilla, recalculadas con el ancho real del panel.
+    /// Las necesita tambien `columns()`: una flecha arriba tiene que saltar
+    /// exactamente una fila de las que se dibujan.
+    pub book_columns: usize,
+    pub chapter_columns: usize,
+
+    /// Ultima seleccion a la que se corrio la vista de cada panel.
+    ///
+    /// Solo se persigue la seleccion cuando esta *cambia*. Haciendolo en cada
+    /// fotograma, la vista volveria sola al elemento elegido y no se podria
+    /// mirar el resto de la lista con la rueda.
+    pub followed: [Option<usize>; 4],
 }
 
 impl OperatorState {
@@ -72,7 +97,17 @@ impl OperatorState {
         let mut state = Self {
             focus: Panel::Books,
             in_query: false,
-            books: BOOKS.iter().map(|(name, _, _)| *name).collect(),
+            books: BOOKS
+                .iter()
+                .filter_map(|(name, abbreviation, _)| {
+                    let book = Book::from_string(name)?;
+                    Some(BookEntry {
+                        name,
+                        abbreviation,
+                        accent: section_color(book.section()),
+                    })
+                })
+                .collect(),
             book: 0,
             chapters: Vec::new(),
             chapter: 0,
@@ -88,6 +123,9 @@ impl OperatorState {
             query_caret: 0,
             query_h_scroll: 0.,
             scroll: Scrolls::default(),
+            book_columns: BOOK_COLUMNS,
+            chapter_columns: CHAPTER_COLUMNS,
+            followed: [None; 4],
         };
 
         state.load_chapters(verses);
@@ -136,6 +174,28 @@ impl OperatorState {
             }
             Action::SubmitQuery => self.jump_to_query(verses),
 
+            Action::Click { panel, index } => {
+                self.focus = panel;
+                self.in_query = false;
+
+                if let Some(index) = index {
+                    self.select(verses, panel, index);
+                }
+            }
+
+            Action::Activate { panel, index } => {
+                self.focus = panel;
+                self.select(verses, panel, index);
+
+                if matches!(panel, Panel::Verses | Panel::Queue) {
+                    return self.send_selection();
+                }
+            }
+
+            Action::Scroll { panel, delta } => {
+                *self.scroll_of(panel) += delta;
+            }
+
             Action::Quit => {}
         }
 
@@ -146,8 +206,8 @@ impl OperatorState {
     /// arriba y abajo se mueven de a un elemento sin casos especiales.
     fn columns(&self) -> usize {
         match self.focus {
-            Panel::Books => BOOK_COLUMNS,
-            Panel::Chapters => CHAPTER_COLUMNS,
+            Panel::Books => self.book_columns,
+            Panel::Chapters => self.chapter_columns,
             Panel::Verses | Panel::Queue => 1,
         }
     }
@@ -175,6 +235,35 @@ impl OperatorState {
             Panel::Books => self.load_chapters(verses),
             Panel::Chapters => self.load_verses(verses),
             _ => {}
+        }
+    }
+
+    /// Elige un elemento de un panel, arrastrando lo que dependa de el.
+    ///
+    /// Es lo mismo que hace una flecha al moverse, para que raton y teclado no
+    /// puedan dejar el estado de formas distintas.
+    fn select<V: VerseRepository>(&mut self, verses: &V, panel: Panel, index: usize) {
+        match panel {
+            Panel::Books if index < self.books.len() => {
+                self.book = index;
+                self.load_chapters(verses);
+            }
+            Panel::Chapters if index < self.chapters.len() => {
+                self.chapter = index;
+                self.load_verses(verses);
+            }
+            Panel::Verses if index < self.verses.len() => self.verse = index,
+            Panel::Queue if index < self.queue.len() => self.queue_index = index,
+            _ => {}
+        }
+    }
+
+    fn scroll_of(&mut self, panel: Panel) -> &mut f32 {
+        match panel {
+            Panel::Books => &mut self.scroll.books,
+            Panel::Chapters => &mut self.scroll.chapters,
+            Panel::Verses => &mut self.scroll.verses,
+            Panel::Queue => &mut self.scroll.queue,
         }
     }
 
@@ -281,7 +370,10 @@ impl OperatorState {
         let chapter = first_index(&query.chapters);
         let verse = first_index(&query.verses);
 
-        if let Some(position) = self.books.iter().position(|name| *name == query.book.as_string())
+        if let Some(position) = self
+            .books
+            .iter()
+            .position(|entry| entry.name == query.book.as_string())
         {
             self.book = position;
             self.load_chapters(verses);
@@ -305,7 +397,7 @@ impl OperatorState {
     }
 
     pub fn current_book(&self) -> Option<Book> {
-        Book::from_string(self.books.get(self.book)?)
+        Book::from_string(self.books.get(self.book)?.name)
     }
 
     pub fn current_chapter(&self) -> Option<u8> {
