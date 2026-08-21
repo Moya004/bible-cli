@@ -1,6 +1,6 @@
 use clay_layout::render_commands::{Border, RenderCommand, RenderCommandConfig};
 
-use crate::ui::theme::TRANSPARENT;
+use crate::ui::design::theme::TRANSPARENT;
 use crate::ui::tui::grid::{Grid, Rect, Style};
 
 /// Lleva los comandos de dibujo de Clay al lienzo de celdas.

@@ -5,7 +5,8 @@ use raylib::ffi;
 use raylib::math::Vector2;
 use raylib::text::{RaylibFont, WeakFont};
 
-use crate::ui::metrics::{FONT_BOLD, Metrics, Role};
+use crate::ui::design::metrics::{Metrics, Role};
+use crate::ui::design::typography::{self, Weight};
 
 /// Rutas donde buscar una tipografia, en orden. Se puede saltar el descarte con
 /// las variables `BIBLIA_FONT` y `BIBLIA_FONT_BOLD`.
@@ -31,55 +32,94 @@ const BOLD: &[&str] = &[
 /// que ser el mismo en ambos sitios o el texto no cuadra con la maquetacion.
 pub const SPACING: f32 = 0.5;
 
-/// Tipografias cargadas, indexadas por el par `(font_id, font_size)` que traen
-/// las `TextConfig` de [`Metrics`].
+/// Tipografias cargadas, indexadas por grosor y cuerpo.
+///
+/// Cada cuerpo necesita su propio atlas rasterizado, asi que la clave es el par
+/// `(Weight, size)`. El atenuado no entra aqui: en la ventana lo lleva el color,
+/// no una tipografia distinta.
 ///
 /// Se guardan como `WeakFont` a proposito: no se descargan nunca. La funcion de
 /// medida que Clay necesita tiene que ser `'static`, asi que las fuentes viven
 /// lo que dura el programa.
 pub struct Fonts {
-    entries: Vec<(u16, u16, WeakFont)>,
+    entries: Vec<(Weight, u16, WeakFont)>,
 }
 
 impl Fonts {
-    pub fn load(metrics: &Metrics) -> Result<Self, String> {
+    /// Carga lo que piden los papeles de `metrics`, mas los cuerpos de `extra`
+    /// en ambos grosores. `extra` es para el proyector, que elige el cuerpo del
+    /// verso en cada fotograma y necesita una escalera donde escoger.
+    pub fn load(metrics: &Metrics, extra: &[u16]) -> Result<Self, String> {
         let regular = pick("BIBLIA_FONT", REGULAR)?;
         let bold = pick("BIBLIA_FONT_BOLD", BOLD).unwrap_or_else(|_| regular.clone());
 
         let codepoints = codepoints();
-        let mut entries: Vec<(u16, u16, WeakFont)> = Vec::new();
+        let mut fonts = Self {
+            entries: Vec::new(),
+        };
 
-        for role in [Role::Title, Role::Body, Role::VerseNumber, Role::Label] {
+        let roles = [
+            Role::Display,
+            Role::Title,
+            Role::Heading,
+            Role::Body,
+            Role::VerseNumber,
+            Role::Label,
+        ];
+
+        for role in roles {
             let style = metrics.style(role);
-
-            if entries
-                .iter()
-                .any(|(id, size, _)| *id == style.font_id && *size == style.font_size)
-            {
-                continue;
-            }
-
-            let path = if style.font_id == FONT_BOLD {
-                &bold
-            } else {
-                &regular
-            };
-
-            let font = load_font(path, style.font_size, &codepoints)
-                .ok_or_else(|| format!("No se pudo cargar la tipografia {}", path))?;
-
-            entries.push((style.font_id, style.font_size, font));
+            fonts.ensure(style.style.weight, style.size, &regular, &bold, &codepoints)?;
         }
 
-        Ok(Self { entries })
+        for size in extra {
+            for weight in [Weight::Regular, Weight::Bold] {
+                fonts.ensure(weight, *size, &regular, &bold, &codepoints)?;
+            }
+        }
+
+        Ok(fonts)
     }
 
-    pub fn get(&self, font_id: u16, font_size: u16) -> &WeakFont {
+    fn ensure(
+        &mut self,
+        weight: Weight,
+        size: u16,
+        regular: &str,
+        bold: &str,
+        codepoints: &[i32],
+    ) -> Result<(), String> {
+        if size == 0 || self.find(weight, size).is_some() {
+            return Ok(());
+        }
+
+        let path = if matches!(weight, Weight::Bold) {
+            bold
+        } else {
+            regular
+        };
+
+        let font = load_font(path, size, codepoints)
+            .ok_or_else(|| format!("No se pudo cargar la tipografia {}", path))?;
+
+        self.entries.push((weight, size, font));
+        Ok(())
+    }
+
+    fn find(&self, weight: Weight, size: u16) -> Option<&WeakFont> {
         self.entries
             .iter()
-            .find(|(id, size, _)| *id == font_id && *size == font_size)
-            .or_else(|| self.entries.first())
+            .find(|(w, s, _)| *w == weight && *s == size)
             .map(|(_, _, font)| font)
+    }
+
+    /// Resuelve el `font_id` que trajo Clay a una tipografia concreta.
+    pub fn get(&self, font_id: u16, font_size: u16) -> &WeakFont {
+        let weight = typography::decode(font_id).weight;
+
+        self.find(weight, font_size)
+            .or_else(|| self.find(Weight::Regular, font_size))
+            .or_else(|| self.entries.first().map(|(_, _, font)| font))
             .expect("siempre se carga al menos una tipografia")
     }
 

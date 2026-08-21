@@ -14,10 +14,11 @@ use termion::{cursor, terminal_size};
 use crate::business::repositories::{BufferRepository, VerseRepository};
 use crate::logic::buffer::Buffer;
 use crate::ui::action::Flow;
-use crate::ui::metrics::Metrics;
+use crate::ui::design::metrics::Metrics;
+use crate::ui::design::space::Space;
 use crate::ui::model::{Frame, Glyphs};
 use crate::ui::state::AppState;
-use crate::ui::theme::Theme;
+use crate::ui::design::theme::Theme;
 use crate::ui::tui::grid::Grid;
 use crate::ui::tui::guard::TerminalGuard;
 use crate::ui::views::{self, Anchors};
@@ -33,7 +34,7 @@ pub fn run<V: VerseRepository, B: BufferRepository>(
     history: &B,
 ) -> Result<()> {
     let metrics = Metrics::TERMINAL;
-    let theme = Theme::TERMINAL;
+    let theme = Theme::terminal();
 
     let mut guard = TerminalGuard::new()?;
     let keys = input::spawn_key_reader();
@@ -102,10 +103,10 @@ pub fn run<V: VerseRepository, B: BufferRepository>(
         }
 
         if let (Some(content), Some(viewport)) = (
-            clay.bounding_box(anchors.results_content),
-            clay.bounding_box(anchors.results_viewport),
+            clay.bounding_box(anchors.results.content),
+            clay.bounding_box(anchors.results.viewport),
         ) {
-            let inner = viewport.height - 2. * (metrics.border + metrics.pad_y) as f32;
+            let inner = viewport.height - 2. * (metrics.border + metrics.space(Space::Xs)) as f32;
             state.set_scroll_extent(content.height, inner.max(0.));
         }
 

@@ -11,10 +11,11 @@ use crate::business::repositories::{BufferRepository, VerseRepository};
 use crate::logic::buffer::Buffer;
 use crate::ui::action::{Action, Flow};
 use crate::ui::gui::fonts::Fonts;
-use crate::ui::metrics::{Metrics, Role};
+use crate::ui::design::metrics::{Metrics, Role};
+use crate::ui::design::space::Space;
 use crate::ui::model::{Frame, Glyphs};
 use crate::ui::state::AppState;
-use crate::ui::theme::Theme;
+use crate::ui::design::theme::Theme;
 use crate::ui::views::{self, Anchors};
 
 const WINDOW_WIDTH: i32 = 960;
@@ -31,7 +32,7 @@ pub fn run<V: VerseRepository, B: BufferRepository>(
     history: &B,
 ) -> Result<()> {
     let metrics = Metrics::WINDOW;
-    let theme = Theme::WINDOW;
+    let theme = Theme::window();
 
     let (mut rl, thread) = raylib::init()
         .size(WINDOW_WIDTH, WINDOW_HEIGHT)
@@ -45,7 +46,7 @@ pub fn run<V: VerseRepository, B: BufferRepository>(
     // contexto de OpenGL) y se filtran a `'static`: la funcion de medida que
     // Clay guarda tiene que serlo, y de todos modos viven todo el programa.
     let fonts: &'static Fonts = Box::leak(Box::new(
-        Fonts::load(&metrics).map_err(|error| Error::new(ErrorKind::NotFound, error))?,
+        Fonts::load(&metrics, &[]).map_err(|error| Error::new(ErrorKind::NotFound, error))?,
     ));
 
     let mut clay = Clay::new(Dimensions::new(WINDOW_WIDTH as f32, WINDOW_HEIGHT as f32));
@@ -76,7 +77,7 @@ pub fn run<V: VerseRepository, B: BufferRepository>(
         // cursor y en el tope del desplazamiento no se nota.
         let field = anchors.and_then(|anchors| clay.bounding_box(anchors.input_field));
         let prefix = fonts
-            .measure(state.caret_prefix(), body.font_id, body.font_size)
+            .measure(state.caret_prefix(), body.font_id(), body.size)
             .x;
 
         if let Some(field) = field {
@@ -85,11 +86,11 @@ pub fn run<V: VerseRepository, B: BufferRepository>(
 
         if let Some((content, viewport)) = anchors.and_then(|anchors| {
             Some((
-                clay.bounding_box(anchors.results_content)?,
-                clay.bounding_box(anchors.results_viewport)?,
+                clay.bounding_box(anchors.results.content)?,
+                clay.bounding_box(anchors.results.viewport)?,
             ))
         }) {
-            let inner = viewport.height - 2. * (metrics.border + metrics.pad_y) as f32;
+            let inner = viewport.height - 2. * (metrics.border + metrics.space(Space::Xs)) as f32;
             state.set_scroll_extent(content.height, inner.max(0.));
         }
 
@@ -104,7 +105,7 @@ pub fn run<V: VerseRepository, B: BufferRepository>(
         let commands: Vec<_> = scope.end().collect();
 
         let mut d = rl.begin_drawing(&thread);
-        d.clear_background(paint::color(theme.base));
+        d.clear_background(paint::color(theme.base.bg));
         paint::paint(&mut d, fonts, &commands);
 
         if let Some(field) = field

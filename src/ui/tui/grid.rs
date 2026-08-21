@@ -4,7 +4,7 @@ use clay_layout::color::Color;
 use termion::{clear, cursor, style};
 use unicode_width::UnicodeWidthChar;
 
-use crate::ui::metrics::{ATTR_BOLD, ATTR_DIM};
+use crate::ui::design::typography::{self, Emphasis, Weight};
 
 /// Rectangulo en celdas. Los extremos `x1`/`y1` son exclusivos.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -250,9 +250,14 @@ impl Grid {
 fn write_style(out: &mut impl Write, style: Style) -> Result<()> {
     write!(out, "{}", termion::style::Reset)?;
 
-    if style.attrs == ATTR_BOLD {
+    // Los atributos viajan como banderas, asi que negrita y atenuado ya no se
+    // excluyen: se pueden pedir los dos a la vez.
+    let text = typography::decode(style.attrs);
+
+    if matches!(text.weight, Weight::Bold) {
         write!(out, "{}", termion::style::Bold)?;
-    } else if style.attrs == ATTR_DIM {
+    }
+    if matches!(text.emphasis, Emphasis::Dim) {
         write!(out, "{}", termion::style::Faint)?;
     }
 
