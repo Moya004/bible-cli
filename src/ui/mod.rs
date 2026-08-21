@@ -1,4 +1,5 @@
 pub mod action;
+pub mod design;
 pub mod metrics;
 pub mod model;
 pub mod state;
