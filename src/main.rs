@@ -17,6 +17,7 @@ use crate::repositories::buffer_sqlite_repository::BufferSqliteRepository;
 use crate::repositories::verse_text_sqlite_repository::VerseTextSqliteRepository;
 
 const WINDOW_FLAG: &str = "--window";
+const OPERATOR_FLAG: &str = "--operator";
 const PROJECTOR_FLAG: &str = "--projector";
 
 fn main() {
@@ -61,9 +62,9 @@ fn main() {
         thread::sleep(Duration::from_secs(5));
     }
 
-    let window_mode = has_flag(WINDOW_FLAG);
-
-    let result = if window_mode {
+    let result = if has_flag(OPERATOR_FLAG) {
+        run_operator(&verse_repo)
+    } else if has_flag(WINDOW_FLAG) {
         run_window(&mut buffer, &verse_repo, &buffer_repo)
     } else {
         ui::tui::run(&mut buffer, &verse_repo, &buffer_repo)
@@ -90,6 +91,16 @@ fn run_window(
     _history: &BufferSqliteRepository,
 ) -> std::io::Result<()> {
     Err(sin_ventana(WINDOW_FLAG))
+}
+
+#[cfg(feature = "gui")]
+fn run_operator(verses: &VerseTextSqliteRepository) -> std::io::Result<()> {
+    ui::operator::run(verses)
+}
+
+#[cfg(not(feature = "gui"))]
+fn run_operator(_verses: &VerseTextSqliteRepository) -> std::io::Result<()> {
+    Err(sin_ventana(OPERATOR_FLAG))
 }
 
 #[cfg(feature = "gui")]

@@ -25,12 +25,12 @@ pub struct GridProps {
 ///
 /// Sirve igual para los 66 libros que para los capitulos de uno: en rejilla
 /// caben todos a la vista y no hay que desplazar nada mientras alguien espera.
-pub fn grid<'render>(
+pub fn grid<'render, Label: AsRef<str>>(
     c: &mut Scope<'render>,
     metrics: &Metrics,
     theme: &Theme,
     props: GridProps,
-    labels: &'render [&'render str],
+    labels: &'render [Label],
 ) {
     let columns = props.columns.max(1);
 
@@ -46,7 +46,7 @@ pub fn grid<'render>(
             |c| {
                 for (column, label) in chunk.iter().enumerate() {
                     let index = row * columns + column;
-                    cell(c, metrics, theme, &props, index, label);
+                    cell(c, metrics, theme, &props, index, label.as_ref());
                 }
             },
         );

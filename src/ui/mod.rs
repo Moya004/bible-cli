@@ -9,4 +9,7 @@ pub mod views;
 pub mod gui;
 
 #[cfg(feature = "gui")]
+pub mod operator;
+
+#[cfg(feature = "gui")]
 pub mod projector;
