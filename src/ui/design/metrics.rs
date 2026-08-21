@@ -125,8 +125,8 @@ impl Metrics {
             RoleStyle::new(Weight::Bold, Emphasis::Normal, 32, 40), // Display
             RoleStyle::new(Weight::Bold, Emphasis::Normal, 20, 28), // Title
             RoleStyle::new(Weight::Bold, Emphasis::Normal, 15, 22), // Heading
-            RoleStyle::new(Weight::Regular, Emphasis::Normal, 17, 24), // Body
-            RoleStyle::new(Weight::Bold, Emphasis::Normal, 13, 24), // VerseNumber
+            RoleStyle::new(Weight::Regular, Emphasis::Normal, 19, 27), // Body
+            RoleStyle::new(Weight::Bold, Emphasis::Normal, 14, 27), // VerseNumber
             RoleStyle::new(Weight::Regular, Emphasis::Normal, 14, 20), // Label
             RoleStyle::new(Weight::Regular, Emphasis::Normal, 10, 13), // Caption
         ],
