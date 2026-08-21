@@ -1,5 +1,7 @@
 use clay_layout::color::Color;
 
+use crate::business::domain::Section;
+
 /// Color con alfa cero: le dice al pintor que no dibuje fondo y deje ver el de
 /// la terminal o el de la ventana.
 pub const TRANSPARENT: Color = Color::rgba(0., 0., 0., 0.);
@@ -67,6 +69,26 @@ pub struct Theme {
     pub verse_number: Color,
     /// Errores en la barra de estado
     pub error: Color,
+}
+
+/// Color de la franja de cada seccion del canon.
+///
+/// Nueve tonos que se distinguen entre si sobre fondo oscuro y que siguen el
+/// orden del canon, para que la rejilla se lea como una escala y no como un
+/// mosaico al azar. Van solo en la franja: el fondo del bloque se queda neutro
+/// para que seleccionado y hover no tengan que competir con nueve colores.
+pub fn section_color(section: Section) -> Color {
+    match section {
+        Section::Pentateuco => Color::u_rgb(0x5f, 0xa8, 0x6a),
+        Section::Historicos => Color::u_rgb(0xd7, 0x9a, 0x4a),
+        Section::Poeticos => Color::u_rgb(0xd7, 0x5f, 0x6b),
+        Section::ProfetasMayores => Color::u_rgb(0xa8, 0x7f, 0xd8),
+        Section::ProfetasMenores => Color::u_rgb(0x7f, 0x8f, 0xd8),
+        Section::Evangelios => Color::u_rgb(0x4a, 0xb5, 0xc4),
+        Section::CartasPaulinas => Color::u_rgb(0x5f, 0xb0, 0x8a),
+        Section::OtrasCartas => Color::u_rgb(0xc4, 0xb0, 0x4a),
+        Section::Apocalipsis => Color::u_rgb(0xd8, 0x7f, 0x4a),
+    }
 }
 
 const INK: Color = Color::u_rgb(0xe8, 0xe8, 0xe8);

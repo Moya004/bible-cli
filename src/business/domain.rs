@@ -242,6 +242,53 @@ impl Book {
     }
 }
 
+/// Grupo al que pertenece un libro dentro del canon.
+///
+/// Estaba dicho en comentarios sobre el enum desde siempre; formalizarlo permite
+/// agrupar los libros por color en la rejilla, que es como uno los busca de
+/// memoria: primero la zona, despues el libro.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Section {
+    Pentateuco,
+    Historicos,
+    Poeticos,
+    ProfetasMayores,
+    ProfetasMenores,
+    Evangelios,
+    CartasPaulinas,
+    OtrasCartas,
+    Apocalipsis,
+}
+
+impl Book {
+    /// Posicion del libro en `BOOKS`, que es tambien su orden canonico.
+    pub fn index(&self) -> usize {
+        BOOKS
+            .iter()
+            .position(|(name, _, _)| *name == self.as_string())
+            .unwrap_or(0)
+    }
+
+    /// Abreviatura corta, la que va grande en la rejilla.
+    pub fn abbreviation(&self) -> &'static str {
+        BOOKS[self.index()].1
+    }
+
+    pub fn section(&self) -> Section {
+        match self.index() {
+            0..=4 => Section::Pentateuco,
+            5..=16 => Section::Historicos,
+            17..=21 => Section::Poeticos,
+            22..=26 => Section::ProfetasMayores,
+            27..=38 => Section::ProfetasMenores,
+            39..=43 => Section::Evangelios,
+            44..=56 => Section::CartasPaulinas,
+            57..=64 => Section::OtrasCartas,
+            _ => Section::Apocalipsis,
+        }
+    }
+}
+
 impl Display for Book {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.as_string())

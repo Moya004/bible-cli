@@ -72,7 +72,7 @@ impl OperatorState {
         let mut state = Self {
             focus: Panel::Books,
             in_query: false,
-            books: BOOKS.iter().map(|(name, _)| *name).collect(),
+            books: BOOKS.iter().map(|(name, _, _)| *name).collect(),
             book: 0,
             chapters: Vec::new(),
             chapter: 0,
