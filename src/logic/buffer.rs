@@ -33,7 +33,12 @@ impl Buffer {
     }
 
     pub fn load_next_entry(&mut self, content: &mut String) {
-        if self.history.len() > 0 && self.history_pointer < self.history.len() - 1 {
+        // Sin historico no hay nada que avanzar, y `len() - 1` se desbordaria.
+        if self.history.is_empty() {
+            return;
+        }
+
+        if self.history_pointer < self.history.len() - 1 {
             self.history_pointer += 1;
             *content = self.history[self.history_pointer].to_string().clone();
         } else if self.history_pointer == self.history.len() - 1 {

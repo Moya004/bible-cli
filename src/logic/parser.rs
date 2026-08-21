@@ -64,12 +64,18 @@ pub fn get_chapter_and_verse(input: &str) -> ChaptersAndVerses {
     for complete_item in input.split(".") {
         let to_search: Vec<&str> = complete_item.split(":").collect();
 
+        // Una cita sin la parte de versiculos no aporta nada; se descarta en vez
+        // de indexar a ciegas, que tumbaria la interfaz completa.
+        let (Some(chapters), Some(verses)) = (to_search.first(), to_search.get(1)) else {
+            continue;
+        };
+
         to_return
             .chapters
-            .push(merge_indicies(get_index_variations(to_search[0])));
+            .push(merge_indicies(get_index_variations(chapters)));
         to_return
             .verses
-            .push(merge_indicies(get_index_variations(to_search[1])));
+            .push(merge_indicies(get_index_variations(verses)));
     }
 
     to_return
@@ -78,26 +84,24 @@ pub fn get_chapter_and_verse(input: &str) -> ChaptersAndVerses {
 fn get_index_variations(input: &str) -> Vec<IndexVariation> {
     let mut to_return: Vec<IndexVariation> = Vec::new();
 
+    // Los indices se descartan en vez de romper: el numero lo escribe el usuario
+    // y algo como "salmos 300:1" no cabe en un u8.
     for group in input.split(",") {
         if list_regex().is_match(group) {
             let low_high: Vec<u8> = group
                 .split("-")
-                .into_iter()
-                .map(|num| {
-                    let final_num = num.trim();
-                    final_num
-                        .parse::<u8>()
-                        .expect(&format!("No valid u8 number: {final_num}"))
-                })
+                .filter_map(|num| num.trim().parse::<u8>().ok())
                 .collect();
-            to_return.push(IndexVariation::List(low_high[0]..=low_high[1]));
-        } else if single_regex().is_match(group) {
-            let final_num = group.trim();
-            to_return.push(IndexVariation::Single(
-                final_num
-                    .parse::<u8>()
-                    .expect(&format!("No valid u8 number: {final_num}")),
-            ));
+
+            if let [low, high] = low_high[..]
+                && low <= high
+            {
+                to_return.push(IndexVariation::List(low..=high));
+            }
+        } else if single_regex().is_match(group)
+            && let Ok(number) = group.trim().parse::<u8>()
+        {
+            to_return.push(IndexVariation::Single(number));
         }
     }
 
