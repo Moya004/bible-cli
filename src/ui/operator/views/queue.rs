@@ -1,4 +1,4 @@
-use clay_layout::grow;
+use clay_layout::{grow, id::Id};
 
 use crate::ui::design::Scope;
 use crate::ui::design::components::list::text_item;
@@ -17,6 +17,7 @@ pub fn view<'render>(
     theme: &Theme,
     frame: &'render Frame<'render>,
     ids: ScrollIds,
+    selected: Id,
 ) {
     let focused = frame.focus == Panel::Queue;
 
@@ -46,6 +47,7 @@ pub fn view<'render>(
                         metrics,
                         theme,
                         state_of(index == frame.queue_index, focused),
+                        (index == frame.queue_index).then_some(selected),
                         cite,
                     );
                 }

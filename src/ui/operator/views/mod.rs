@@ -23,6 +23,8 @@ pub struct Anchors {
     pub verses: ScrollIds,
     pub queue: ScrollIds,
     pub query_field: Id,
+    /// Elemento elegido de cada panel, para correr la vista hasta el
+    pub selected: [Id; 4],
 }
 
 /// Ventana de control, segun el boceto: libros y capitulos a la izquierda, los
@@ -51,6 +53,12 @@ pub fn root<'render>(
             content: c.id("queue_content"),
         },
         query_field: c.id("query_field"),
+        selected: [
+            c.id("books_selected"),
+            c.id("chapters_selected"),
+            c.id("verses_selected"),
+            c.id("queue_selected"),
+        ],
     };
 
     c.with(
@@ -82,13 +90,13 @@ pub fn root<'render>(
                             .child_gap(metrics.space(Space::Xs))
                             .end(),
                         |c| {
-                            navigation::books(c, metrics, theme, frame, anchors.books);
-                            navigation::chapters(c, metrics, theme, frame, anchors.chapters);
+                            navigation::books(c, metrics, theme, frame, anchors.books, anchors.selected[0]);
+                            navigation::chapters(c, metrics, theme, frame, anchors.chapters, anchors.selected[1]);
                         },
                     );
 
-                    verses::view(c, metrics, theme, frame, anchors.verses);
-                    queue::view(c, metrics, theme, frame, anchors.queue);
+                    verses::view(c, metrics, theme, frame, anchors.verses, anchors.selected[2]);
+                    queue::view(c, metrics, theme, frame, anchors.queue, anchors.selected[3]);
                 },
             );
 

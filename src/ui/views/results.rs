@@ -92,6 +92,7 @@ fn card_view<'render>(
                             metrics,
                             theme,
                             State::Normal,
+                            None,
                             &verse.number,
                             verse.text,
                         );

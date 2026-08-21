@@ -1,5 +1,5 @@
 use clay_layout::{
-    fit, grow,
+    fit, grow, id::Id,
     layout::{Alignment, LayoutAlignmentX, LayoutAlignmentY, LayoutDirection, Sizing},
 };
 
@@ -19,6 +19,8 @@ pub struct GridProps {
     pub selected: Option<usize>,
     /// El panel que contiene la rejilla tiene el foco del teclado.
     pub focused: bool,
+    /// Id de la celda elegida, para poder correr la vista hasta ella.
+    pub selected_id: Option<Id>,
 }
 
 /// Rejilla de celdas seleccionables.
@@ -73,9 +75,14 @@ fn cell<'render>(
     };
 
     let surface = theme.item.state(state);
+    let mut declaration = Decl::new();
+
+    if state != State::Normal && let Some(id) = props.selected_id {
+        declaration.id(id);
+    }
 
     c.with(
-        Decl::new()
+        declaration
             .layout()
             .width(props.cell)
             .height(fit!())

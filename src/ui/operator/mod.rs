@@ -12,7 +12,7 @@ use raylib::drawing::RaylibDraw;
 
 use crate::business::repositories::VerseRepository;
 use crate::ui::design::components::input_bar::keep_caret_visible;
-use crate::ui::design::components::scroll_area::{ScrollIds, clamp};
+use crate::ui::design::components::scroll_area::{clamp, follow};
 use crate::ui::design::metrics::{Metrics, Role};
 use crate::ui::design::theme::Theme;
 use crate::ui::gui::fonts::Fonts;
@@ -111,27 +111,36 @@ pub fn run<V: VerseRepository>(verses: &V) -> Result<()> {
     Ok(())
 }
 
-/// Acota el desplazamiento de cada panel a su contenido.
+/// Corre cada panel hasta dejar visible su elemento elegido, y acota el
+/// resultado a lo que hay de contenido.
 ///
-/// Sin esto una lista larga se puede correr mas alla de su final, y la
-/// seleccion queda fuera de la vista sin forma de volver.
+/// Es lo que mantiene la seleccion a la vista al bajar con las flechas o al
+/// saltar a una cita escrita; sin esto uno navega a ciegas apenas la lista pasa
+/// de una pantalla.
 fn follow_selection(state: &mut OperatorState, clay: &Clay, anchors: Anchors) {
-    for (ids, offset) in [
-        (anchors.books, &mut state.scroll.books),
-        (anchors.chapters, &mut state.scroll.chapters),
-        (anchors.verses, &mut state.scroll.verses),
-        (anchors.queue, &mut state.scroll.queue),
-    ] {
-        *offset = clamped(clay, ids, *offset);
-    }
-}
+    let panels = [
+        (anchors.books, anchors.selected[0], &mut state.scroll.books),
+        (
+            anchors.chapters,
+            anchors.selected[1],
+            &mut state.scroll.chapters,
+        ),
+        (anchors.verses, anchors.selected[2], &mut state.scroll.verses),
+        (anchors.queue, anchors.selected[3], &mut state.scroll.queue),
+    ];
 
-fn clamped(clay: &Clay, ids: ScrollIds, offset: f32) -> f32 {
-    match (
-        clay.bounding_box(ids.content),
-        clay.bounding_box(ids.viewport),
-    ) {
-        (Some(content), Some(viewport)) => clamp(offset, content.height, viewport.height),
-        _ => offset,
+    for (ids, selected, offset) in panels {
+        let (Some(content), Some(viewport)) = (
+            clay.bounding_box(ids.content),
+            clay.bounding_box(ids.viewport),
+        ) else {
+            continue;
+        };
+
+        if let Some(selected) = clay.bounding_box(selected) {
+            *offset = follow(*offset, &selected, &viewport);
+        }
+
+        *offset = clamp(*offset, content.height, viewport.height);
     }
 }

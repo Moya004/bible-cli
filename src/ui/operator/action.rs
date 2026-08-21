@@ -88,20 +88,26 @@ pub fn actions(rl: &mut RaylibHandle, in_query: bool) -> Vec<Action> {
         (KeyboardKey::KEY_SPACE, Action::QueueNext),
         (KeyboardKey::KEY_BACKSPACE, Action::QueuePrevious),
         (KeyboardKey::KEY_F1, Action::ToggleBlank),
-        (KeyboardKey::KEY_SLASH, Action::OpenQuery),
     ] {
         if pressed(rl, key) {
             actions.push(action);
         }
     }
 
-    // El `+` se escucha solo como caracter, nunca como tecla. Asi funciona
-    // este o no en el teclado numerico y con cualquier distribucion, y sobre
-    // todo no se encola dos veces: una misma pulsacion genera el evento de
-    // tecla *y* el de caracter.
+    // Los atajos que son un caracter se escuchan como caracter, nunca como
+    // tecla.
+    //
+    // raylib identifica las teclas por su posicion fisica en un teclado US, no
+    // por lo que escriben: `KEY_SLASH` es la tecla que en QWERTY lleva el `/`,
+    // que en Dvorak escribe `z`, y la que si escribe `/` llega como
+    // `KEY_LEFT_BRACKET`. Mirando el caracter, el atajo es el mismo simbolo en
+    // cualquier distribucion. De paso no se dispara dos veces: una pulsacion
+    // genera el evento de tecla *y* el de caracter.
     while let Some(character) = rl.get_char_pressed() {
-        if character == '+' {
-            actions.push(Action::Enqueue);
+        match character {
+            '+' => actions.push(Action::Enqueue),
+            '/' => actions.push(Action::OpenQuery),
+            _ => {}
         }
     }
 
@@ -112,6 +118,9 @@ pub fn actions(rl: &mut RaylibHandle, in_query: bool) -> Vec<Action> {
         actions.push(Action::FocusPrevious);
     }
 
+    // Con Control apretado no llega evento de caracter, asi que este si va por
+    // posicion fisica: es la tecla que un teclado US rotula `Q`. Con la ventana
+    // se puede cerrar igual desde el gestor de ventanas.
     if rl.is_key_down(KeyboardKey::KEY_LEFT_CONTROL) && pressed(rl, KeyboardKey::KEY_Q) {
         actions.push(Action::Quit);
     }

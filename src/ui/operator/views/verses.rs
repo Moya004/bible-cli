@@ -1,4 +1,4 @@
-use clay_layout::grow;
+use clay_layout::{grow, id::Id};
 
 use crate::ui::design::Scope;
 use crate::ui::design::components::list::verse_item;
@@ -20,6 +20,7 @@ pub fn view<'render>(
     theme: &Theme,
     frame: &'render Frame<'render>,
     ids: ScrollIds,
+    selected: Id,
 ) {
     let focused = frame.focus == Panel::Verses;
 
@@ -49,6 +50,7 @@ pub fn view<'render>(
                         metrics,
                         theme,
                         state_of(index == frame.verse, focused),
+                        (index == frame.verse).then_some(selected),
                         &verse.number,
                         verse.text,
                     );

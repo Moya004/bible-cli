@@ -1,4 +1,4 @@
-use clay_layout::{grow, layout::Sizing};
+use clay_layout::{grow, id::Id, layout::Sizing};
 
 use crate::ui::design::Scope;
 use crate::ui::design::components::grid::{GridProps, grid};
@@ -21,6 +21,7 @@ pub fn books<'render>(
     theme: &Theme,
     frame: &'render Frame<'render>,
     ids: ScrollIds,
+    selected: Id,
 ) {
     let focused = frame.focus == Panel::Books;
 
@@ -45,6 +46,7 @@ pub fn books<'render>(
                         cell: grow!(),
                         selected: Some(frame.book),
                         focused,
+                        selected_id: Some(selected),
                     },
                     frame.books,
                 );
@@ -60,6 +62,7 @@ pub fn chapters<'render>(
     theme: &Theme,
     frame: &'render Frame<'render>,
     ids: ScrollIds,
+    selected: Id,
 ) {
     let focused = frame.focus == Panel::Chapters;
 
@@ -87,6 +90,7 @@ pub fn chapters<'render>(
                         cell: Sizing::Fixed(metrics.space(Space::Xl) as f32),
                         selected: Some(frame.chapter),
                         focused,
+                        selected_id: Some(selected),
                     },
                     &frame.chapters,
                 );

@@ -1,4 +1,4 @@
-use clay_layout::{fit, grow, layout::LayoutDirection};
+use clay_layout::{fit, grow, id::Id, layout::LayoutDirection};
 
 use crate::ui::design::metrics::{Metrics, Role};
 use crate::ui::design::space::Space;
@@ -14,12 +14,20 @@ pub fn list_item<'render>(
     metrics: &Metrics,
     theme: &Theme,
     state: State,
+    id: Option<Id>,
     children: impl FnOnce(&mut Scope<'render>),
 ) {
     let surface = theme.item.state(state);
+    let mut declaration = Decl::new();
+
+    // Solo la fila elegida lleva id: es la unica cuyo recuadro hace falta
+    // consultar, para correr la vista hasta ella.
+    if let Some(id) = id {
+        declaration.id(id);
+    }
 
     c.with(
-        Decl::new()
+        declaration
             .layout()
             .width(grow!())
             .height(fit!())
@@ -38,11 +46,12 @@ pub fn text_item<'render>(
     metrics: &Metrics,
     theme: &Theme,
     state: State,
+    id: Option<Id>,
     label: &'render str,
 ) {
     let surface = theme.item.state(state);
 
-    list_item(c, metrics, theme, state, |c| {
+    list_item(c, metrics, theme, state, id, |c| {
         c.text(label, metrics.text_no_wrap(Role::Body, surface.fg));
     });
 }
@@ -54,6 +63,7 @@ pub fn verse_item<'render>(
     metrics: &Metrics,
     theme: &Theme,
     state: State,
+    id: Option<Id>,
     number: &'render str,
     text: &'render str,
 ) {
@@ -61,7 +71,7 @@ pub fn verse_item<'render>(
 
     let surface = theme.item.state(state);
 
-    list_item(c, metrics, theme, state, |c| {
+    list_item(c, metrics, theme, state, id, |c| {
         c.with(
             Decl::new()
                 .layout()
