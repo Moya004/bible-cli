@@ -17,8 +17,19 @@ use crate::repositories::buffer_sqlite_repository::BufferSqliteRepository;
 use crate::repositories::verse_text_sqlite_repository::VerseTextSqliteRepository;
 
 const WINDOW_FLAG: &str = "--window";
+const PROJECTOR_FLAG: &str = "--projector";
 
 fn main() {
+    // El proyector se atiende antes que nada: es un proceso hijo que solo
+    // dibuja lo que le mandan por la tuberia. No abre la base ni siembra nada,
+    // y su stdout pertenece al protocolo.
+    if has_flag(PROJECTOR_FLAG) {
+        if let Err(error) = run_projector() {
+            eprintln!("Error en el proyector: {}", error);
+        }
+        return;
+    }
+
     // La siembra imprime por consola, asi que ocurre antes de que cualquiera de
     // las dos interfaces tome la pantalla.
     let _ = load_bible_structure();
@@ -50,7 +61,7 @@ fn main() {
         thread::sleep(Duration::from_secs(5));
     }
 
-    let window_mode = std::env::args().skip(1).any(|arg| arg == WINDOW_FLAG);
+    let window_mode = has_flag(WINDOW_FLAG);
 
     let result = if window_mode {
         run_window(&mut buffer, &verse_repo, &buffer_repo)
@@ -78,10 +89,31 @@ fn run_window(
     _verses: &VerseTextSqliteRepository,
     _history: &BufferSqliteRepository,
 ) -> std::io::Result<()> {
-    eprintln!(
-        "Esta copia se compilo sin el modo ventana.\n\
-         Vuelve a compilar con:  cargo run --features gui -- {}",
-        WINDOW_FLAG
-    );
-    Ok(())
+    Err(sin_ventana(WINDOW_FLAG))
+}
+
+#[cfg(feature = "gui")]
+fn run_projector() -> std::io::Result<()> {
+    ui::projector::run()
+}
+
+#[cfg(not(feature = "gui"))]
+fn run_projector() -> std::io::Result<()> {
+    Err(sin_ventana(PROJECTOR_FLAG))
+}
+
+#[cfg(not(feature = "gui"))]
+fn sin_ventana(flag: &str) -> std::io::Error {
+    std::io::Error::other(format!(
+        "esta copia se compilo sin soporte de ventana; recompila con: \
+         cargo run --features gui -- {}",
+        flag
+    ))
+}
+
+/// Los argumentos se filtran aca y no llegan nunca al analizador de citas: el
+/// patron de traduccion es `--\w+` y se tragaria `--window` como si fuera un
+/// codigo de version.
+fn has_flag(flag: &str) -> bool {
+    std::env::args().skip(1).any(|argument| argument == flag)
 }
