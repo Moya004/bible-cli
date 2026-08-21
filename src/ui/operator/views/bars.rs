@@ -16,6 +16,14 @@ pub fn status<'render>(
     frame: &'render Frame<'render>,
 ) {
     bar(c, metrics, theme, |c| {
+        // El aviso va primero, no al final. La barra recorta lo que se
+        // desborda, y puesto al final un mensaje de estado largo lo empujaba
+        // fuera de la vista: justo el aviso que no puede faltar desaparecia
+        // cuando habia algo mas que decir.
+        if frame.blank {
+            badge(c, metrics, theme, "NEGRO · F1", theme.error);
+        }
+
         c.text("En pantalla:", metrics.text_no_wrap(Role::Label, theme.muted));
         c.text(frame.live, metrics.text_no_wrap(Role::Heading, theme.accent));
 
@@ -23,12 +31,6 @@ pub fn status<'render>(
 
         if !frame.status.is_empty() {
             c.text(frame.status, metrics.text_no_wrap(Role::Label, theme.muted));
-        }
-
-        // Sin este aviso el operador olvida que la salida esta tapada y pierde
-        // medio minuto preguntandose por que no aparece nada.
-        if frame.blank {
-            badge(c, metrics, theme, "NEGRO · F1", theme.error);
         }
     });
 }

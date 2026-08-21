@@ -85,7 +85,6 @@ pub fn actions(rl: &mut RaylibHandle, in_query: bool) -> Vec<Action> {
         (KeyboardKey::KEY_RIGHT, Action::Right),
         (KeyboardKey::KEY_ENTER, Action::Send),
         (KeyboardKey::KEY_KP_ENTER, Action::Send),
-        (KeyboardKey::KEY_KP_ADD, Action::Enqueue),
         (KeyboardKey::KEY_SPACE, Action::QueueNext),
         (KeyboardKey::KEY_BACKSPACE, Action::QueuePrevious),
         (KeyboardKey::KEY_F1, Action::ToggleBlank),
@@ -96,8 +95,10 @@ pub fn actions(rl: &mut RaylibHandle, in_query: bool) -> Vec<Action> {
         }
     }
 
-    // El `+` esta en distinto sitio segun la distribucion; se acepta por
-    // caracter ademas de por la tecla del teclado numerico.
+    // El `+` se escucha solo como caracter, nunca como tecla. Asi funciona
+    // este o no en el teclado numerico y con cualquier distribucion, y sobre
+    // todo no se encola dos veces: una misma pulsacion genera el evento de
+    // tecla *y* el de caracter.
     while let Some(character) = rl.get_char_pressed() {
         if character == '+' {
             actions.push(Action::Enqueue);
