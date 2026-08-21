@@ -6,32 +6,21 @@ mod repositories;
 mod ui;
 
 use db::seeder::load_bible_structure;
-use logic::{buffer::Buffer, parser::get_queries};
+use logic::buffer::Buffer;
 
 use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
 
-use crate::business::repositories::VerseRepository;
 use crate::db::seeder::load_traduction;
 use crate::repositories::buffer_sqlite_repository::BufferSqliteRepository;
 use crate::repositories::verse_text_sqlite_repository::VerseTextSqliteRepository;
-use crate::ui::main_display::{continue_controls, main_controls};
+
+const WINDOW_FLAG: &str = "--window";
+
 fn main() {
-    let mut buffer = Buffer::new();
-    let buffer_repo = BufferSqliteRepository::new().unwrap();
-
-    match buffer.load_history(&buffer_repo) {
-        Ok(_) => {}
-        Err(error) => {
-            println!(
-                "No se pudo cargar el historico: {}\r\nContinuando...",
-                error
-            );
-            thread::sleep(Duration::from_secs(5));
-        }
-    }
-
+    // La siembra imprime por consola, asi que ocurre antes de que cualquiera de
+    // las dos interfaces tome la pantalla.
     let _ = load_bible_structure();
     let _ = load_traduction(
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -40,31 +29,59 @@ fn main() {
     let _ = load_traduction(
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("./traducciones/DHH-Dios_Habla_Hoy.csv"),
     );
-    loop {
-        let input_to_process = main_controls(&mut buffer, &buffer_repo).unwrap();
 
-        let processed_input = get_queries(&input_to_process);
-        // for a in processed_input {
-        //     println!("{}", a);
-        // }
+    let Some(buffer_repo) = BufferSqliteRepository::new() else {
+        eprintln!("No se pudo abrir la base de datos para el historico");
+        return;
+    };
 
-        // processed_input.iter().for_each(|q| {
-        //     println!("{q}");
-        // });
+    let Some(verse_repo) = VerseTextSqliteRepository::new() else {
+        eprintln!("No se pudo abrir la base de datos de versos");
+        return;
+    };
 
-        let verse_repo = VerseTextSqliteRepository::new().unwrap();
+    let mut buffer = Buffer::new();
 
-        processed_input
-            .iter()
-            .for_each(|q| match verse_repo.get_text(q) {
-                Ok(v) => {
-                    println!("{v}");
-                }
-                Err(_) => {
-                    return;
-                }
-            });
-
-        let _ = continue_controls();
+    if let Err(error) = buffer.load_history(&buffer_repo) {
+        println!(
+            "No se pudo cargar el historico: {}\r\nContinuando...",
+            error
+        );
+        thread::sleep(Duration::from_secs(5));
     }
+
+    let window_mode = std::env::args().skip(1).any(|arg| arg == WINDOW_FLAG);
+
+    let result = if window_mode {
+        run_window(&mut buffer, &verse_repo, &buffer_repo)
+    } else {
+        ui::tui::run(&mut buffer, &verse_repo, &buffer_repo)
+    };
+
+    if let Err(error) = result {
+        eprintln!("Error en la interfaz: {}", error);
+    }
+}
+
+#[cfg(feature = "gui")]
+fn run_window(
+    buffer: &mut Buffer,
+    verses: &VerseTextSqliteRepository,
+    history: &BufferSqliteRepository,
+) -> std::io::Result<()> {
+    ui::gui::run(buffer, verses, history)
+}
+
+#[cfg(not(feature = "gui"))]
+fn run_window(
+    _buffer: &mut Buffer,
+    _verses: &VerseTextSqliteRepository,
+    _history: &BufferSqliteRepository,
+) -> std::io::Result<()> {
+    eprintln!(
+        "Esta copia se compilo sin el modo ventana.\n\
+         Vuelve a compilar con:  cargo run --features gui -- {}",
+        WINDOW_FLAG
+    );
+    Ok(())
 }
