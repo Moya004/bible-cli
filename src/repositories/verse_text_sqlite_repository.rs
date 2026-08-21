@@ -24,6 +24,20 @@ impl VerseTextSqliteRepository {
         // viajan de vuelta y se muestran en la barra de estado.
         r#try.ok().map(|connection| VerseTextSqliteRepository { connection })
     }
+
+    fn translation(&self, code: &str) -> Result<Translation, Error> {
+        self.connection.query_one(
+            "SELECT * FROM TRADUCCIONES t WHERE t.codigo = ?1;",
+            (code.to_uppercase(),),
+            |row| {
+                Ok(Translation {
+                    id: row.get_unwrap("id"),
+                    code: row.get_unwrap("codigo"),
+                    name: row.get_unwrap("nombre"),
+                })
+            },
+        )
+    }
 }
 
 impl VerseRepository for VerseTextSqliteRepository {
@@ -103,5 +117,43 @@ impl VerseRepository for VerseTextSqliteRepository {
             }
         }
         Ok(to_return)
+    }
+
+    /// Se consulta `BIBLIA` y no `TEXTO_VERSO` porque es el indice canonico: la
+    /// estructura de libros y capitulos es la misma en cualquier traduccion, y
+    /// asi los paneles de navegacion no cambian al cambiar de version.
+    fn chapters(&self, book: Book) -> Result<Vec<u8>, Error> {
+        let mut statement = self.connection.prepare(
+            "SELECT DISTINCT capitulo FROM BIBLIA WHERE libro = ?1 ORDER BY capitulo;",
+        )?;
+
+        let rows = statement.query_map((book.as_string(),), |row| row.get::<_, u8>(0))?;
+
+        Ok(rows.flatten().collect())
+    }
+
+    fn verses(&self, book: Book, chapter: u8, translation: &str) -> Result<Vec<Cite>, Error> {
+        let translation = self.translation(translation)?;
+
+        let mut statement = self.connection.prepare(
+            "SELECT verso, texto FROM TEXTO_VERSO \
+             WHERE libro = ?1 AND capitulo = ?2 AND translation_id = ?3 \
+             ORDER BY verso;",
+        )?;
+
+        let rows = statement.query_map(
+            (book.as_string(), chapter, translation.id),
+            |row| {
+                Ok(Cite {
+                    book,
+                    chapter,
+                    verse: row.get_unwrap("verso"),
+                    text: row.get_unwrap("texto"),
+                    translation: translation.clone(),
+                })
+            },
+        )?;
+
+        Ok(rows.flatten().collect())
     }
 }

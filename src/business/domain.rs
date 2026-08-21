@@ -190,7 +190,9 @@ impl Book {
                 "Salmos" => Some(Book::Salmos),
                 "Proverbios" => Some(Book::Proverbios),
                 "Eclesiastés" => Some(Book::Eclesiastes),
-                "Cantares" => Some(Book::Cantares),
+                // El nombre canonico en `BOOKS` es el largo, no "Cantares":
+                // comparando con el corto este libro no se resolvia nunca.
+                "Cantar de los cantares" => Some(Book::Cantares),
                 "Isaías" => Some(Book::Isaias),
                 "Jeremías" => Some(Book::Jeremias),
                 "Lamentaciones" => Some(Book::Lamentaciones),
