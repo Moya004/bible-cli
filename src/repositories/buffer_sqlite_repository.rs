@@ -13,15 +13,9 @@ impl BufferSqliteRepository {
     pub fn new() -> Option<Self> {
         let r#try = Connection::open(project_root().join("./database.sqlite3"));
 
-        match r#try {
-            Ok(success) => Some(BufferSqliteRepository {
-                connection: success,
-            }),
-            Err(err) => {
-                println!("Error conectando a la base de datos, {}", err);
-                None
-            }
-        }
+        // Ver la nota en `VerseTextSqliteRepository::new`: nada de escribir a
+        // stdout desde el repositorio.
+        r#try.ok().map(|connection| BufferSqliteRepository { connection })
     }
 }
 
@@ -36,10 +30,7 @@ impl BufferRepository for BufferSqliteRepository {
             Ok(row.get_unwrap::<_, String>("contenido"))
         }) {
             Ok(r) => r,
-            Err(error) => {
-                println!("An error occured when trying to get translation: {}", error);
-                return Err(error);
-            }
+            Err(error) => return Err(error),
         };
 
         for i in query_iter {

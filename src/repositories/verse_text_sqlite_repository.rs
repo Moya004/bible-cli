@@ -19,15 +19,10 @@ impl VerseTextSqliteRepository {
     pub fn new() -> Option<Self> {
         let r#try = Connection::open(project_root().join("./database.sqlite3"));
 
-        match r#try {
-            Ok(success) => Some(VerseTextSqliteRepository {
-                connection: success,
-            }),
-            Err(err) => {
-                println!("Error conectando a la base de datos, {}", err);
-                None
-            }
-        }
+        // Sin `println!`: la interfaz toma la pantalla en modo directo y
+        // cualquier escritura suelta a stdout rompe el fotograma. Los errores
+        // viajan de vuelta y se muestran en la barra de estado.
+        r#try.ok().map(|connection| VerseTextSqliteRepository { connection })
     }
 }
 
@@ -45,10 +40,7 @@ impl VerseRepository for VerseTextSqliteRepository {
             },
         ) {
             Ok(t) => t,
-            Err(error) => {
-                println!("An error occured when trying to get translation: {}", error);
-                return Err(error);
-            }
+            Err(error) => return Err(error),
         };
 
         let chapter_constraint = match &query.chapters {
@@ -101,13 +93,7 @@ impl VerseRepository for VerseTextSqliteRepository {
             })
         }) {
             Ok(t) => t,
-            Err(error) => {
-                println!(
-                    "An error occured when trying to fetch the verses: {}",
-                    error
-                );
-                return Err(error);
-            }
+            Err(error) => return Err(error),
         };
 
         for res in query_iter {
