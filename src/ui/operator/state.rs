@@ -3,7 +3,7 @@ use clay_layout::color::Color;
 use crate::business::domain::{Book, Cite};
 use crate::business::repositories::VerseRepository;
 use crate::constants::cons::BOOKS;
-use crate::constants::types::IndexVariation;
+use crate::logic::buffer::Buffer;
 use crate::logic::parser::get_queries;
 use crate::ui::design::theme::section_color;
 use crate::ui::operator::action::{Action, Panel};
@@ -133,7 +133,12 @@ impl OperatorState {
     }
 
     /// Aplica una intencion y devuelve lo que haya que mandarle al proyector.
-    pub fn dispatch<V: VerseRepository>(&mut self, action: Action, verses: &V) -> Vec<Command> {
+    pub fn dispatch<V: VerseRepository>(
+        &mut self,
+        action: Action,
+        verses: &V,
+        buffer: &mut Buffer,
+    ) -> Vec<Command> {
         match action {
             Action::FocusNext => self.focus = self.focus.next(),
             Action::FocusPrevious => self.focus = self.focus.previous(),
@@ -144,7 +149,7 @@ impl OperatorState {
             Action::Right => self.move_selection(verses, 1),
 
             Action::Send => return self.send_selection(),
-            Action::Enqueue => self.enqueue(),
+            Action::Enqueue => self.enqueue_selection(),
 
             Action::QueueNext => return self.step_queue(1),
             Action::QueuePrevious => return self.step_queue(-1),
@@ -172,7 +177,9 @@ impl OperatorState {
                     self.query.remove(at);
                 }
             }
-            Action::SubmitQuery => self.jump_to_query(verses),
+            Action::SubmitQuery => self.submit_query(verses, buffer),
+            Action::HistoryPrevious => self.recall(buffer, true),
+            Action::HistoryNext => self.recall(buffer, false),
 
             Action::Click { panel, index } => {
                 self.focus = panel;
@@ -330,13 +337,21 @@ impl OperatorState {
         commands
     }
 
-    fn enqueue(&mut self) {
+    fn enqueue_selection(&mut self) {
         let Some(selection) = self.selection() else {
             return;
         };
 
         self.status = format!("Encolado: {}", selection.cite);
         self.queue.push(selection);
+    }
+
+    /// Encola un verso concreto, sin tocar el estado ni el aviso.
+    ///
+    /// Lo usa el envio de una consulta, que encola de golpe todo lo que la cita
+    /// abarque y resume al final en vez de avisar verso por verso.
+    fn enqueue(&mut self, cite: &Cite) {
+        self.queue.push(Selection::from_cite(cite));
     }
 
     fn step_queue(&mut self, delta: isize) -> Vec<Command> {
@@ -355,45 +370,94 @@ impl OperatorState {
         self.show(selection)
     }
 
-    /// Lleva la seleccion a la cita escrita en la barra de consulta.
+    /// Encola todo lo que abarque la cita escrita en la barra de consulta.
     ///
     /// Reutiliza el mismo analizador que la interfaz de terminal, asi que acepta
-    /// las mismas abreviaturas: `jn 3:16`, `salmos 23:1`.
-    fn jump_to_query<V: VerseRepository>(&mut self, verses: &V) {
-        let queries = get_queries(&self.query);
+    /// las mismas abreviaturas y varias citas de una vez: `jn 3:16; salmos 23:1-3`.
+    ///
+    /// Al terminar, la seleccion queda en el ultimo verso encontrado: es el que
+    /// uno acaba de pedir, y deja los paneles abiertos por donde se estaba
+    /// trabajando en vez de donde estaban antes de escribir.
+    fn submit_query<V: VerseRepository>(&mut self, verses: &V, buffer: &mut Buffer) {
+        // La linea entra al historico antes de interpretarse, para poder
+        // recuperarla con las flechas aunque no se reconociera ninguna cita —
+        // que es justo cuando uno quiere recuperarla y corregirla.
+        let line = buffer.read_line(std::mem::take(&mut self.query));
 
-        let Some(query) = queries.first() else {
-            self.status = format!("No se reconocio la cita «{}»", self.query.trim());
+        self.in_query = false;
+        self.query_caret = 0;
+        self.query_h_scroll = 0.;
+
+        let queries = get_queries(&line);
+
+        if queries.is_empty() {
+            self.status = format!("No se reconocio ninguna cita en «{}»", line.trim());
             return;
+        }
+
+        let mut enqueued = 0;
+        let mut last: Option<Cite> = None;
+        let mut failed: Option<String> = None;
+
+        for query in &queries {
+            match verses.get_text(query) {
+                Ok(passage) => {
+                    for cite in passage.0 {
+                        self.enqueue(&cite);
+                        enqueued += 1;
+                        last = Some(cite);
+                    }
+                }
+                Err(error) => failed = Some(error.to_string()),
+            }
+        }
+
+        if let Some(cite) = last {
+            self.select_cite(verses, &cite);
+            self.focus = Panel::Verses;
+        }
+
+        self.status = match (failed, enqueued) {
+            (Some(error), _) => format!("Error consultando: {}", error),
+            (None, 0) => format!("Sin resultados para «{}»", line.trim()),
+            (None, count) => format!("{} verso(s) encolado(s)", count),
         };
+    }
 
-        let chapter = first_index(&query.chapters);
-        let verse = first_index(&query.verses);
-
+    /// Lleva los paneles hasta un verso concreto.
+    ///
+    /// El orden importa: elegir libro recarga capitulos, y elegir capitulo
+    /// recarga versos poniendo el indice en cero. Hay que ir de arriba abajo o
+    /// el ultimo paso se pierde.
+    fn select_cite<V: VerseRepository>(&mut self, verses: &V, cite: &Cite) {
         if let Some(position) = self
             .books
             .iter()
-            .position(|entry| entry.name == query.book.as_string())
+            .position(|entry| entry.name == cite.book.as_string())
         {
             self.book = position;
             self.load_chapters(verses);
         }
 
-        if let Some(position) = self.chapters.iter().position(|c| *c == chapter) {
+        if let Some(position) = self.chapters.iter().position(|c| *c == cite.chapter) {
             self.chapter = position;
             self.load_verses(verses);
         }
 
-        if let Some(position) = self.verses.iter().position(|c| c.verse == verse) {
+        if let Some(position) = self.verses.iter().position(|c| c.verse == cite.verse) {
             self.verse = position;
         }
+    }
 
-        self.in_query = false;
-        self.focus = Panel::Verses;
-        self.query.clear();
-        self.query_caret = 0;
-        self.query_h_scroll = 0.;
-        self.status = format!("{} {}:{}", query.book, chapter, verse);
+    /// Recorre el historico de consultas con las flechas, mientras se escribe.
+    fn recall(&mut self, buffer: &mut Buffer, backwards: bool) {
+        if backwards {
+            buffer.load_prev_entry(&mut self.query);
+        } else {
+            buffer.load_next_entry(&mut self.query);
+        }
+
+        self.query_caret = self.query.chars().count();
     }
 
     pub fn current_book(&self) -> Option<Book> {
@@ -414,12 +478,5 @@ impl OperatorState {
             .nth(self.query_caret)
             .map(|(index, _)| index)
             .unwrap_or(self.query.len())
-    }
-}
-
-fn first_index(variation: &IndexVariation) -> u8 {
-    match variation {
-        IndexVariation::Single(value) => *value,
-        IndexVariation::List(range) => *range.start(),
     }
 }

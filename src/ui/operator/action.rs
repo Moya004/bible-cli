@@ -48,6 +48,9 @@ pub enum Action {
     InsertChar(char),
     Backspace,
     SubmitQuery,
+    /// Recorre el historico de consultas mientras se escribe
+    HistoryPrevious,
+    HistoryNext,
     /// Click: lleva el foco a ese panel y elige ese elemento
     Click { panel: Panel, index: Option<usize> },
     /// Doble click: proyecta lo elegido
@@ -74,6 +77,8 @@ pub fn actions(rl: &mut RaylibHandle, in_query: bool) -> Vec<Action> {
             (KeyboardKey::KEY_ENTER, Action::SubmitQuery),
             (KeyboardKey::KEY_KP_ENTER, Action::SubmitQuery),
             (KeyboardKey::KEY_ESCAPE, Action::CloseQuery),
+            (KeyboardKey::KEY_UP, Action::HistoryPrevious),
+            (KeyboardKey::KEY_DOWN, Action::HistoryNext),
         ] {
             if pressed(rl, key) {
                 actions.push(action);

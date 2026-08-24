@@ -10,7 +10,8 @@ use clay_layout::{Clay, math::{Dimensions, Vector2}, text::TextConfig};
 use raylib::consts::{MouseButton, TraceLogLevel};
 use raylib::drawing::RaylibDraw;
 
-use crate::business::repositories::VerseRepository;
+use crate::business::repositories::{BufferRepository, VerseRepository};
+use crate::logic::buffer::Buffer;
 use crate::ui::design::components::input_bar::keep_caret_visible;
 use crate::ui::design::components::scroll_area::{clamp, follow};
 use crate::ui::design::metrics::{Metrics, Role};
@@ -31,7 +32,11 @@ const HEIGHT: i32 = 780;
 ///
 /// Es la unica que toca la base de datos: resuelve el texto y se lo manda ya
 /// hecho al proceso proyector, que solo dibuja.
-pub fn run<V: VerseRepository>(verses: &V) -> Result<()> {
+pub fn run<V: VerseRepository, B: BufferRepository>(
+    verses: &V,
+    buffer: &mut Buffer,
+    history: &B,
+) -> Result<()> {
     let metrics = Metrics::WINDOW;
     let theme = Theme::window();
 
@@ -60,7 +65,6 @@ pub fn run<V: VerseRepository>(verses: &V) -> Result<()> {
 
     let mut state = OperatorState::new(verses);
     let mut projector = Projector::new();
-    let mut anchors: Option<Anchors> = None;
     let mut hit = Hit::default();
     let mut clicks = Clicks::default();
     let body = metrics.style(Role::Body);
@@ -81,10 +85,10 @@ pub fn run<V: VerseRepository>(verses: &V) -> Result<()> {
         for action in pending {
             if action == Action::Quit {
                 projector.close();
-                return Ok(());
+                return finish(buffer, history, &mut state);
             }
 
-            for command in state.dispatch(action, verses) {
+            for command in state.dispatch(action, verses, buffer) {
                 if let Err(error) = projector.send(&command) {
                     state.status = error;
                 }
@@ -96,37 +100,61 @@ pub fn run<V: VerseRepository>(verses: &V) -> Result<()> {
             rl.get_screen_height() as f32,
         ));
 
-        // Medidas del fotograma anterior: consultarlas ahora evita pedirselas a
-        // Clay mientras la maquetacion nueva lo tiene prestado, y a 60 fps ese
-        // fotograma de retraso no se nota.
-        if let Some(anchors) = anchors {
-            follow_selection(&mut state, &clay, anchors);
-            fit_columns(&mut state, &clay, anchors, fonts, &metrics);
-
-            if let Some(field) = clay.bounding_box(anchors.query_field) {
-                let prefix = fonts
-                    .measure(state.caret_prefix(), body.font_id(), body.size)
-                    .x;
-                state.query_h_scroll =
-                    keep_caret_visible(state.query_h_scroll, prefix, field.width);
-            }
-        }
-
         let frame = Frame::build(&state, hit);
 
-        let mut scope = clay.begin::<(), ()>();
-        let (new_anchors, new_hit) = views::root(&mut scope, &metrics, &theme, &frame);
-        let render = scope.end().collect::<Vec<_>>();
+        // El ambito va en un bloque para que suelte a Clay: las medidas de mas
+        // abajo lo necesitan libre.
+        let (current, new_hit, render) = {
+            let mut scope = clay.begin::<(), ()>();
+            let (anchors, hit) = views::root(&mut scope, &metrics, &theme, &frame);
+            (anchors, hit, scope.end().collect::<Vec<_>>())
+        };
 
-        anchors = Some(new_anchors);
+        {
+            let mut d = rl.begin_drawing(&thread);
+            d.clear_background(paint::color(theme.base.bg));
+            paint::paint(&mut d, fonts, &render);
+        }
+
+        // Los comandos apuntan al texto del fotograma, asi que se sueltan antes
+        // que el; y el fotograma presta el estado, que hace falta mutable ya.
+        drop(render);
+        drop(frame);
+
         hit = new_hit;
 
-        let mut d = rl.begin_drawing(&thread);
-        d.clear_background(paint::color(theme.base.bg));
-        paint::paint(&mut d, fonts, &render);
+        // Las medidas se toman con los recuadros de **este** fotograma, no del
+        // anterior. Los anclajes llevan dentro el indice elegido, asi que unos
+        // anclajes viejos apuntan al elemento que estaba elegido antes: tras un
+        // salto se perseguia al anterior y el nuevo no se alcanzaba nunca.
+        follow_selection(&mut state, &clay, current);
+        fit_columns(&mut state, &clay, current, fonts, &metrics);
+
+        if let Some(field) = clay.bounding_box(current.query_field) {
+            let prefix = fonts
+                .measure(state.caret_prefix(), body.font_id(), body.size)
+                .x;
+            state.query_h_scroll = keep_caret_visible(state.query_h_scroll, prefix, field.width);
+        }
     }
 
     projector.close();
+    finish(buffer, history, &mut state)
+}
+
+/// Guarda el historico de consultas al salir, como hace el modo terminal.
+///
+/// Si falla, se avisa en la barra de estado en vez de perder la salida: cerrar
+/// la ventana es justo cuando nadie va a leer un mensaje en consola.
+fn finish<B: BufferRepository>(
+    buffer: &Buffer,
+    history: &B,
+    state: &mut OperatorState,
+) -> Result<()> {
+    if let Err(error) = buffer.save_history(history) {
+        state.status = format!("No se pudo guardar el historico: {}", error);
+    }
+
     Ok(())
 }
 

@@ -269,11 +269,6 @@ impl Book {
             .unwrap_or(0)
     }
 
-    /// Abreviatura corta, la que va grande en la rejilla.
-    pub fn abbreviation(&self) -> &'static str {
-        BOOKS[self.index()].1
-    }
-
     pub fn section(&self) -> Section {
         match self.index() {
             0..=4 => Section::Pentateuco,

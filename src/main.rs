@@ -63,7 +63,7 @@ fn main() {
     }
 
     let result = if has_flag(OPERATOR_FLAG) {
-        run_operator(&verse_repo)
+        run_operator(&mut buffer, &verse_repo, &buffer_repo)
     } else if has_flag(WINDOW_FLAG) {
         run_window(&mut buffer, &verse_repo, &buffer_repo)
     } else {
@@ -94,12 +94,20 @@ fn run_window(
 }
 
 #[cfg(feature = "gui")]
-fn run_operator(verses: &VerseTextSqliteRepository) -> std::io::Result<()> {
-    ui::operator::run(verses)
+fn run_operator(
+    buffer: &mut Buffer,
+    verses: &VerseTextSqliteRepository,
+    history: &BufferSqliteRepository,
+) -> std::io::Result<()> {
+    ui::operator::run(verses, buffer, history)
 }
 
 #[cfg(not(feature = "gui"))]
-fn run_operator(_verses: &VerseTextSqliteRepository) -> std::io::Result<()> {
+fn run_operator(
+    _buffer: &mut Buffer,
+    _verses: &VerseTextSqliteRepository,
+    _history: &BufferSqliteRepository,
+) -> std::io::Result<()> {
     Err(sin_ventana(OPERATOR_FLAG))
 }
 
