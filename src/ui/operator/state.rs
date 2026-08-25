@@ -177,6 +177,19 @@ impl OperatorState {
                     self.query.remove(at);
                 }
             }
+            Action::Delete => {
+                if self.query_caret < self.query_len() {
+                    let at = self.caret_byte();
+                    self.query.remove(at);
+                }
+            }
+            Action::CaretLeft => self.query_caret = self.query_caret.saturating_sub(1),
+            Action::CaretRight => {
+                self.query_caret = (self.query_caret + 1).min(self.query_len())
+            }
+            Action::CaretStart => self.query_caret = 0,
+            Action::CaretEnd => self.query_caret = self.query_len(),
+
             Action::SubmitQuery => self.submit_query(verses, buffer),
             Action::HistoryPrevious => self.recall(buffer, true),
             Action::HistoryNext => self.recall(buffer, false),
@@ -470,6 +483,10 @@ impl OperatorState {
 
     pub fn caret_prefix(&self) -> &str {
         &self.query[..self.caret_byte()]
+    }
+
+    fn query_len(&self) -> usize {
+        self.query.chars().count()
     }
 
     fn caret_byte(&self) -> usize {

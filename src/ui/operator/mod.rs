@@ -6,7 +6,7 @@ pub mod views;
 
 use std::io::Result;
 
-use clay_layout::{Clay, math::{Dimensions, Vector2}, text::TextConfig};
+use clay_layout::{Clay, math::{BoundingBox, Dimensions, Vector2}, text::TextConfig};
 use raylib::consts::{MouseButton, TraceLogLevel};
 use raylib::drawing::RaylibDraw;
 
@@ -14,7 +14,7 @@ use crate::business::repositories::{BufferRepository, VerseRepository};
 use crate::logic::buffer::Buffer;
 use crate::ui::design::components::input_bar::keep_caret_visible;
 use crate::ui::design::components::scroll_area::{clamp, follow};
-use crate::ui::design::metrics::{Metrics, Role};
+use crate::ui::design::metrics::{Metrics, Role, RoleStyle};
 use crate::ui::design::space::Space;
 use crate::ui::design::theme::Theme;
 use crate::ui::gui::fonts::Fonts;
@@ -68,6 +68,12 @@ pub fn run<V: VerseRepository, B: BufferRepository>(
     let mut hit = Hit::default();
     let mut clicks = Clicks::default();
     let body = metrics.style(Role::Body);
+    // Recuadro de la barra de consulta del fotograma anterior. El `Vec` de
+    // comandos mantiene prestado a Clay mientras vive, asi que no se le puede
+    // preguntar nada entre maquetar y pintar; y ese recuadro solo se mueve al
+    // cambiar el tamaño de la ventana, de modo que uno de hace un fotograma
+    // sirve igual.
+    let mut query_field: Option<BoundingBox> = None;
 
     while !rl.window_should_close() {
         // Clay resuelve el puntero contra la maquetacion anterior, asi que esto
@@ -110,10 +116,31 @@ pub fn run<V: VerseRepository, B: BufferRepository>(
             (anchors, hit, scope.end().collect::<Vec<_>>())
         };
 
+        // Donde va el cursor de la consulta.
+        let caret = state
+            .in_query
+            .then(|| query_field.map(|field| caret_at(&state, field, fonts, body)))
+            .flatten();
+
+        // Parpadeo: un cursor quieto se confunde con un simbolo mas de la barra.
+        let blink = (rl.get_time() * 1.6) as i64 % 2 == 0;
+
         {
             let mut d = rl.begin_drawing(&thread);
             d.clear_background(paint::color(theme.base.bg));
             paint::paint(&mut d, fonts, &render);
+
+            if let Some((x, y)) = caret
+                && blink
+            {
+                d.draw_rectangle(
+                    x as i32,
+                    y as i32,
+                    2,
+                    body.line_height as i32,
+                    paint::color(theme.accent),
+                );
+            }
         }
 
         // Los comandos apuntan al texto del fotograma, asi que se sueltan antes
@@ -135,11 +162,31 @@ pub fn run<V: VerseRepository, B: BufferRepository>(
                 .measure(state.caret_prefix(), body.font_id(), body.size)
                 .x;
             state.query_h_scroll = keep_caret_visible(state.query_h_scroll, prefix, field.width);
+            query_field = Some(field);
         }
     }
 
     projector.close();
     finish(buffer, history, &mut state)
+}
+
+/// Esquina superior izquierda del cursor dentro de la barra de consulta.
+///
+/// La columna es el ancho del texto que lo precede, medido con la misma
+/// tipografia con la que se dibuja, menos lo que la barra lleve desplazado. No
+/// hay aritmetica de filas: la entrada es de una sola linea y se corre en
+/// horizontal.
+fn caret_at(
+    state: &OperatorState,
+    field: BoundingBox,
+    fonts: &Fonts,
+    body: RoleStyle,
+) -> (f32, f32) {
+    let prefix = fonts
+        .measure(state.caret_prefix(), body.font_id(), body.size)
+        .x;
+
+    (field.x + prefix - state.query_h_scroll, field.y)
 }
 
 /// Guarda el historico de consultas al salir, como hace el modo terminal.

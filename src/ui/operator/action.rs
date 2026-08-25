@@ -47,6 +47,13 @@ pub enum Action {
     CloseQuery,
     InsertChar(char),
     Backspace,
+    /// Borra el caracter bajo el cursor
+    Delete,
+    /// Mueve el cursor dentro de la consulta
+    CaretLeft,
+    CaretRight,
+    CaretStart,
+    CaretEnd,
     SubmitQuery,
     /// Recorre el historico de consultas mientras se escribe
     HistoryPrevious,
@@ -74,6 +81,11 @@ pub fn actions(rl: &mut RaylibHandle, in_query: bool) -> Vec<Action> {
 
         for (key, action) in [
             (KeyboardKey::KEY_BACKSPACE, Action::Backspace),
+            (KeyboardKey::KEY_DELETE, Action::Delete),
+            (KeyboardKey::KEY_LEFT, Action::CaretLeft),
+            (KeyboardKey::KEY_RIGHT, Action::CaretRight),
+            (KeyboardKey::KEY_HOME, Action::CaretStart),
+            (KeyboardKey::KEY_END, Action::CaretEnd),
             (KeyboardKey::KEY_ENTER, Action::SubmitQuery),
             (KeyboardKey::KEY_KP_ENTER, Action::SubmitQuery),
             (KeyboardKey::KEY_ESCAPE, Action::CloseQuery),
