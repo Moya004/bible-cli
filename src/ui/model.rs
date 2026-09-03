@@ -53,10 +53,6 @@ impl Glyphs {
         prompt: "📔> ",
     };
 
-    pub const WINDOW: Self = Self {
-        app_title: "biblia-cli",
-        prompt: "> ",
-    };
 }
 
 impl<'a> Frame<'a> {
