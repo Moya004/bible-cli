@@ -4,8 +4,11 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
-# Modo ventana (`--window`). Compila el backend de raylib, que construye raylib
-# desde C y necesita cmake.
+# Activa por omision: el modo normal del programa es el operador, y ese necesita
+# ventana. Compila el backend de raylib, que construye raylib desde C y necesita
+# cmake; en una maquina sin cmake, `--no-default-features` deja una copia que
+# solo abre la terminal.
+default = ["gui"]
 gui = ["dep:raylib"]
 
 [dependencies]
